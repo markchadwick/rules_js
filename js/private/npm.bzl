@@ -43,6 +43,8 @@ def _npm_install_impl(ctx):
   package       = ctx.attr.package
   version       = ctx.attr.version
   type_version  = ctx.attr.type_version
+  ts_defs       = ctx.attr.ts_defs
+  ignore_deps   = ctx.attr.ignore_deps
 
   ctx.file('WORKSPACE', "workspace(name='%s')\n" % ctx.name, False)
   npm_tar = _download_npm_tar(
@@ -60,6 +62,10 @@ def _npm_install_impl(ctx):
     '--js_tar',    ctx.path('lib.tgz'),
     '--npm_tar',   ctx.path(npm_tar),
   ]
+  if ignore_deps:
+    cmd += ['--ignore_deps'] + ignore_deps
+  if ts_defs:
+    cmd += ['--ts_defs'] + [ctx.path(ts_def) for ts_def in ts_defs]
 
   # If a @types version has been supplied, download that tarball from NPM and
   # append the argument to `npm_to_js_tar`
@@ -74,8 +80,6 @@ def _npm_install_impl(ctx):
     )
     cmd += ['--types_tar', ctx.path(types_tar)]
 
-  for ts_def in ctx.attr.ts_defs:
-    cmd += ['--ts_def', ctx.path(ts_def)]
 
   ctx.execute(cmd)
 
@@ -89,6 +93,7 @@ _npm_install = repository_rule(
     'ts_defs':      attr.label_list(default=[]),
     'type_version': attr.string(mandatory=False),
     'type_sha256':  attr.string(mandatory=False),
+    'ignore_deps':  attr.string_list(),
 
     '_npm_to_js_tar': attr.label(
       default    = Label('//js/tools:npm_to_js_tar.py'),

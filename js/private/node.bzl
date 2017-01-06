@@ -5,7 +5,7 @@ def _node_buildfile(arch):
   ])
 
 
-def node_repositories():
+def js_repositories():
   native.new_http_archive(
     name = 'nodejs_linux_amd64',
     url = 'https://nodejs.org/dist/v6.2.2/node-v6.2.2-linux-x64.tar.gz',

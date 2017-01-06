@@ -1,8 +1,8 @@
+js_type          = FileType(['.js'])
 js_tar_type      = FileType(['.tgz', '.tar.gz'])
 js_dep_providers = ['js_tar', 'deps']
 
-
-def _transitive_tars(ctx):
+def transitive_tars(ctx):
   tars = set(order='compile')
   for dep in ctx.attr.deps:
     tars += dep.deps | [dep.js_tar]
@@ -15,7 +15,7 @@ def _js_tar_impl(ctx):
   return struct(
     files  = set([js_tar]),
     js_tar = js_tar,
-    deps   = _transitive_tars(ctx),
+    deps   = transitive_tars(ctx),
   )
 
 
@@ -26,7 +26,7 @@ def _build_tar(ctx, files, tars, output):
     '--mode=0555',
     '--compression=gz',
   ] + [
-    '--file=%s=%s' % (s.path, s.path) for s in ctx.files.srcs
+    '--file=%s=%s' % (s.path, s.short_path) for s in ctx.files.srcs
   ] + [
     '--tar=%s' % t.path for t in tars
   ]
@@ -53,13 +53,13 @@ def _js_library_impl(ctx):
   return struct(
     files  = set([js_tar]),
     js_tar = js_tar,
-    deps   = _transitive_tars(ctx)
+    deps   = transitive_tars(ctx)
   )
 
 
 def _js_binary_impl(ctx):
   js_tar = ctx.new_file('%s.tgz' % ctx.label.name)
-  tars = _transitive_tars(ctx)
+  tars = transitive_tars(ctx)
   _build_tar(ctx, ctx.files.srcs, tars, js_tar)
 
   content = [
@@ -67,13 +67,15 @@ def _js_binary_impl(ctx):
     'set -o pipefail',
     'mkdir ./node_modules',
     'function _cleanup {',
-    '   rm -rf ./node_modules',
+    '  rm -rf ./node_modules',
     '}',
     'trap _cleanup EXIT',
     'tar -xzf %s -C ./node_modules' % js_tar.short_path,
   ] + [
-    '%s ./node_modules/%s' %
-      (ctx.executable._node.path, src.short_path) for src in ctx.files.srcs
+    'NODEPATH=$PWD %s ./node_modules/%s "$@"' % (
+      ctx.executable._node.path,
+      src.short_path,
+    ) for src in js_type.filter(ctx.files.srcs)
   ]
 
   ctx.file_action(
@@ -83,7 +85,7 @@ def _js_binary_impl(ctx):
   )
 
   runfiles = ctx.runfiles(
-    files = [js_tar],
+    files = ctx.files.srcs + [js_tar],
     transitive_files = set([ctx.executable._node]),
   )
 

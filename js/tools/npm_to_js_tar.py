@@ -11,7 +11,8 @@ parser.add_argument('--buildfile')
 parser.add_argument('--js_tar')
 parser.add_argument('--npm_tar')
 parser.add_argument('--types_tar')
-parser.add_argument('--ts_def', nargs='*')
+parser.add_argument('--ts_defs', nargs='*')
+parser.add_argument('--ignore_deps', nargs='*')
 
 
 _BUILDFILE = string.Template("""
@@ -51,14 +52,23 @@ def _copy_tar_files(name, src, dst, filter=None):
     dst.addfile(info, fileobj=src.extractfile(src_name))
 
 
-def _write_buildfile(filename, package, js_tar_name, visibility=None):
+def _write_buildfile(filename, package, js_tar_name, ignore_deps,
+                     visibility=None):
+
   if visibility is None:
     visibility = ['//visibility:public']
 
   deps = []
   dep_comments = []
+
+  to_ignore = set()
+  if ignore_deps: to_ignore = set(ignore_deps)
+
   for dep, ver in package.get('dependencies', {}).items():
-    deps.append('@%s//:lib' % dep.replace('-', '.'))
+    bazel_name = dep.replace('-', '.')
+    if bazel_name in to_ignore:
+      continue
+    deps.append('@%s//:lib' % bazel_name)
     dep_comments.append('#  req: %s %s' % (dep, ver))
 
   with open(filename, 'w') as out:
@@ -72,7 +82,8 @@ def _write_buildfile(filename, package, js_tar_name, visibility=None):
     }))
 
 
-def _main(buildfile, js_tar_name, npm_tar_name, types_tar_name, ts_defs):
+def _main(buildfile, js_tar_name, npm_tar_name, types_tar_name, ts_defs,
+          ignore_deps):
   js_tar  = tarfile.open(js_tar_name, 'w:gz')
   npm_tar = tarfile.open(npm_tar_name)
   package = _extract_package(npm_tar)
@@ -89,7 +100,7 @@ def _main(buildfile, js_tar_name, npm_tar_name, types_tar_name, ts_defs):
   # TODO: Copy ts_defs
 
   # Write the BUILD file
-  _write_buildfile(buildfile, package, js_tar_name)
+  _write_buildfile(buildfile, package, js_tar_name, ignore_deps)
 
 
 def _parse_args(args):
@@ -114,7 +125,8 @@ def main(args):
     js_tar_name    = params.js_tar,
     npm_tar_name   = params.npm_tar,
     types_tar_name = params.types_tar,
-    ts_defs        = params.ts_def,
+    ts_defs        = params.ts_defs,
+    ignore_deps    = params.ignore_deps,
   )
 
   return 0

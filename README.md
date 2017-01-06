@@ -22,6 +22,10 @@ There are two public module rules
     )
     ```
 
+Note that each `src` passed to a `js_binary` rule will run with a new invocation
+of Node, and it will silently ignore any `src` file that doesn't have a `.js`
+extension.
+
 Further, there is a WORKSPACE rule to install modules from NPM, optionally
 include their typescript definitions. `npm_install` will also take a `sha256`
 argument to verify against what's published on NPM as well as a `type_sha256`
@@ -33,6 +37,13 @@ for the type declaration.
     ```
 
 The resulting library will be available as `@immutable//:lib`.
+
+Because the rule will create your `BUILD` file for you, it needs to include all
+specified dependencies. Occasionally, a library will have some functionality you
+don't need that pulls in a large number of transitive dependencies. While
+unsafe, you can pass `npm_install` a `ignore_deps` list of strings (of the Bazel
+dot-style names), and they will not be included as dependencies. This li'l trick
+is to be used at your own risk.
 
 ## External Dependencies
 When using `npm_install`, a module will be created with the source for that NPM
