@@ -1,6 +1,8 @@
 js_type          = FileType(['.js'])
 js_tar_type      = FileType(['.tgz', '.tar.gz'])
 js_dep_providers = ['js_tar', 'deps']
+js_bin_providers = ['js_tar', 'deps', 'main']
+
 
 def transitive_tars(ctx):
   tars = set(order='compile')
@@ -62,6 +64,11 @@ def _js_binary_impl(ctx):
   tars = transitive_tars(ctx)
   _build_tar(ctx, ctx.files.srcs, tars, js_tar)
 
+  # TODO: This quotes arguments in double quotes. It's not entirely safe for
+  # arbitrary inputs
+  arguments = ' '.join(['"%s"' % arg for arg in ctx.attr.arguments])
+  main      = "'require(\"%s\")'" % ctx.attr.main
+
   content = [
     '#!/bin/bash -eu',
     'set -o pipefail',
@@ -71,17 +78,17 @@ def _js_binary_impl(ctx):
     '}',
     'trap _cleanup EXIT',
     'tar -xzf %s -C ./node_modules' % js_tar.short_path,
-  ] + [
-    'NODEPATH=$PWD %s ./node_modules/%s "$@"' % (
-      ctx.executable._node.path,
-      src.short_path,
-    ) for src in js_type.filter(ctx.files.srcs)
+    'NODEPATH=$PWD {node} -e {main} -- {args} "$@"'.format(
+      node = ctx.executable._node.path,
+      main = main,
+      args = arguments,
+    ),
   ]
 
   ctx.file_action(
     output     = ctx.outputs.executable,
     executable = True,
-    content    = '\n'.join(content),
+    content    = '\n'.join(content) + '\n',
   )
 
   runfiles = ctx.runfiles(
@@ -93,6 +100,7 @@ def _js_binary_impl(ctx):
     files    = set([js_tar, ctx.outputs.executable]),
     runfiles = runfiles,
     js_tar   = js_tar,
+    main     = ctx.attr.main,
     deps     = set(order='compile'),
   )
 
@@ -138,6 +146,8 @@ js_binary = rule(
   executable = True,
   attrs = {
     'srcs':       attr.label_list(allow_files=True),
+    'main':       attr.string(mandatory=True),
+    'arguments':  attr.string_list(),
     'deps':       _js_dep_attr,
     '_build_tar': _build_tar_attr,
     '_node':      _node_attr
