@@ -1,12 +1,11 @@
 js_type          = FileType(['.js'])
 js_tar_type      = FileType(['.tgz', '.tar.gz'])
 js_dep_providers = ['js_tar', 'deps']
-js_bin_providers = ['js_tar', 'deps', 'main']
 
 
-def transitive_tars(ctx):
+def transitive_tars(deps):
   tars = set(order='compile')
-  for dep in ctx.attr.deps:
+  for dep in deps:
     tars += dep.deps | [dep.js_tar]
   return tars
 
@@ -17,18 +16,18 @@ def _js_tar_impl(ctx):
   return struct(
     files  = set([js_tar]),
     js_tar = js_tar,
-    deps   = transitive_tars(ctx),
+    deps   = transitive_tars(ctx.attr.deps),
   )
 
 
-def _build_tar(ctx, files, tars, output):
+def build_tar(ctx, files, tars, output):
   args = [
     '--output=' + output.path,
     '--directory=/',
     '--mode=0555',
     '--compression=gz',
   ] + [
-    '--file=%s=%s' % (s.path, s.short_path) for s in ctx.files.srcs
+    '--file=%s=%s' % (s.path, s.short_path) for s in files
   ] + [
     '--tar=%s' % t.path for t in tars
   ]
@@ -50,24 +49,18 @@ def _build_tar(ctx, files, tars, output):
 
 def _js_library_impl(ctx):
   js_tar = ctx.new_file('%s.tgz' % ctx.label.name)
-  _build_tar(ctx, ctx.files.srcs, [], js_tar)
+  build_tar(ctx, ctx.files.srcs, [], js_tar)
 
   return struct(
     files  = set([js_tar]),
+    library_sources = ctx.files.srcs,
     js_tar = js_tar,
-    deps   = transitive_tars(ctx)
+    deps   = transitive_tars(ctx.attr.deps)
   )
 
 
-def _js_binary_impl(ctx):
-  js_tar = ctx.new_file('%s.tgz' % ctx.label.name)
-  tars = transitive_tars(ctx)
-  _build_tar(ctx, ctx.files.srcs, tars, js_tar)
-
-  # TODO: This quotes arguments in double quotes. It's not entirely safe for
-  # arbitrary inputs
-  arguments = ' '.join(['"%s"' % arg for arg in ctx.attr.arguments])
-  main      = "'require(\"%s\")'" % ctx.attr.main
+def node_driver(ctx, output, js_tar, node, arguments=[]):
+  safe_args = ["'%s'" % arg for arg in arguments]
 
   content = [
     '#!/bin/bash -eu',
@@ -78,21 +71,37 @@ def _js_binary_impl(ctx):
     '}',
     'trap _cleanup EXIT',
     'tar -xzf %s -C ./node_modules' % js_tar.short_path,
-    'NODEPATH=$PWD {node} -e {main} -- {args} "$@"'.format(
-      node = ctx.executable._node.path,
-      main = main,
-      args = arguments,
+    'NODEPATH=$PWD {node} {arguments} "$@"'.format(
+      node      = node.path,
+      arguments = ' '.join(safe_args)
     ),
   ]
 
   ctx.file_action(
-    output     = ctx.outputs.executable,
+    output     = output,
+    content    = '\n'.join(content),
     executable = True,
-    content    = '\n'.join(content) + '\n',
+  )
+
+
+def _js_binary_impl(ctx):
+  js_tar = build_tar(ctx,
+    files  = ctx.files.src,
+    tars   = transitive_tars(ctx.attr.deps),
+    output = ctx.outputs.js_tar
+  )
+
+  arguments = ['node_modules/%s' % ctx.file.src.short_path]
+
+  node_driver(ctx,
+    output    = ctx.outputs.executable,
+    js_tar    = js_tar,
+    node      = ctx.executable._node,
+    arguments = arguments,
   )
 
   runfiles = ctx.runfiles(
-    files = ctx.files.srcs + [js_tar],
+    files = [js_tar],
     transitive_files = set([ctx.executable._node]),
   )
 
@@ -100,25 +109,24 @@ def _js_binary_impl(ctx):
     files    = set([js_tar, ctx.outputs.executable]),
     runfiles = runfiles,
     js_tar   = js_tar,
-    main     = ctx.attr.main,
-    deps     = set(order='compile'),
+    main     = ctx.file.src,
   )
 
 # ------------------------------------------------------------------------------
 
-_build_tar_attr = attr.label(
+build_tar_attr = attr.label(
   default     = Label('@bazel_tools//tools/build_defs/pkg:build_tar'),
   cfg         = 'host',
   executable  = True,
   allow_files = True)
 
-_node_attr = attr.label(
+node_attr = attr.label(
   default     = Label('//js/toolchain:node'),
   cfg         = 'host',
   executable  = True,
   allow_files = True)
 
-_js_dep_attr = attr.label_list(providers=['js_tar', 'deps'])
+js_dep_attr = attr.label_list(providers=js_dep_providers)
 
 
 js_tar = rule(
@@ -128,7 +136,7 @@ js_tar = rule(
       allow_files = FileType(['.tgz', '.tar.gz']),
       single_file = True,
       mandatory   = True),
-    'deps': _js_dep_attr,
+    'deps': js_dep_attr,
   }
 )
 
@@ -136,8 +144,8 @@ js_library = rule(
   _js_library_impl,
   attrs = {
     'srcs':       attr.label_list(allow_files=True),
-    'deps':       _js_dep_attr,
-    '_build_tar': _build_tar_attr,
+    'deps':       js_dep_attr,
+    '_build_tar': build_tar_attr,
   },
 )
 
@@ -145,11 +153,12 @@ js_binary = rule(
   _js_binary_impl,
   executable = True,
   attrs = {
-    'srcs':       attr.label_list(allow_files=True),
-    'main':       attr.string(mandatory=True),
-    'arguments':  attr.string_list(),
-    'deps':       _js_dep_attr,
-    '_build_tar': _build_tar_attr,
-    '_node':      _node_attr
+    'src':        attr.label(allow_files=True, single_file=True),
+    'deps':       js_dep_attr,
+    '_build_tar': build_tar_attr,
+    '_node':      node_attr
+  },
+  outputs = {
+    'js_tar': '%{name}.tar.gz',
   },
 )
