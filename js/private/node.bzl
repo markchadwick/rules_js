@@ -52,6 +52,7 @@ def js_repositories():
   npm_install(
     name         = 'mocha',
     version      = '3.2.0',
+    type_version = '2.2.37',
     ignore_deps  = [
       'browser.stdout',
       'growl',

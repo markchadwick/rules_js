@@ -19,6 +19,11 @@ def _js_tar_impl(ctx):
     deps   = transitive_tars(ctx.attr.deps),
   )
 
+def _js_tar_path(src):
+  path = src.short_path
+  if path.startswith('../'):
+    return path[3:]
+  return path
 
 def build_tar(ctx, files, tars, output):
   args = [
@@ -27,7 +32,7 @@ def build_tar(ctx, files, tars, output):
     '--mode=0555',
     '--compression=gz',
   ] + [
-    '--file=%s=%s' % (s.path, s.short_path) for s in files
+    '--file=%s=%s' % (s.path, _js_tar_path(s)) for s in files
   ] + [
     '--tar=%s' % t.path for t in tars
   ]
@@ -62,6 +67,14 @@ def _js_library_impl(ctx):
 def node_driver(ctx, output, js_tar, node, arguments=[]):
   safe_args = ["'%s'" % arg for arg in arguments]
 
+  # Most generated js_tar files can be resolved relative to the working
+  # directory of a binary (ie: A runfile). However, externals cannot. Try to
+  # resolve the js_tar using the short path, but if it attempts to walk up a
+  # directory, use the full path.
+  js_tar_path = js_tar.short_path
+  if js_tar_path.startswith('../'):
+    js_tar_path = js_tar.path
+
   content = [
     '#!/bin/bash -eu',
     'set -o pipefail',
@@ -70,7 +83,7 @@ def node_driver(ctx, output, js_tar, node, arguments=[]):
     '  rm -rf ./node_modules',
     '}',
     'trap _cleanup EXIT',
-    'tar -xzf %s -C ./node_modules' % js_tar.short_path,
+    'tar -xzf %s -C ./node_modules' % js_tar_path,
     'NODEPATH=$PWD {node} {arguments} "$@"'.format(
       node      = node.path,
       arguments = ' '.join(safe_args)
@@ -91,7 +104,7 @@ def _js_binary_impl(ctx):
     output = ctx.outputs.js_tar
   )
 
-  arguments = ['node_modules/%s' % ctx.file.src.short_path]
+  arguments = ['./node_modules/%s' % _js_tar_path(ctx.file.src)]
 
   node_driver(ctx,
     output    = ctx.outputs.executable,

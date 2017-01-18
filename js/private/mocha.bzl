@@ -18,7 +18,7 @@ def _js_test_impl(ctx):
 
   arguments = [
     'node_modules/mocha/bin/mocha'
-  ] + ['node_modules/%s' % src.path for src in ctx.files.srcs]
+  ] + ['node_modules/%s' % src.short_path for src in ctx.files.srcs]
 
   node_driver(ctx,
     output    = ctx.outputs.executable,
