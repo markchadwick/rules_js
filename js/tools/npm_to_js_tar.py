@@ -9,98 +9,109 @@ import tarfile
 parser = argparse.ArgumentParser('Convert NPM tarballs into js_tar impls')
 parser.add_argument('--buildfile')
 parser.add_argument('--js_tar')
-parser.add_argument('--npm_tar')
-parser.add_argument('--types_tar')
-parser.add_argument('--ts_defs', nargs='*')
+parser.add_argument('--npm_tar', nargs='+')
 parser.add_argument('--ignore_deps', nargs='*')
 
 
 _BUILDFILE = string.Template("""
 load('@io_bazel_rules_js//js/private:rules.bzl', 'js_tar')
-# ${name}@${version}
-${dep_comments}
+${dep_infos}
 js_tar(
   name   = 'lib',
-  js_tar = '${output}',
+  js_tar = '${js_tar}',
   deps   = ${deps},
   visibility = ${visibility},
 )
 """)
 
 
-def _extract_package(input):
+def _package_roots(src):
   """
-  In practice, it's not entirely safe to assume that all NPM packages have their
-  package.json in a directory named "package". I have no goddamn clue (or
-  interest in learning) how `npm` resolves with package.json in a tarball is the
-  correct one, so y'all get this comment. If you've come across a bug which has
-  lead you to this comment, my deepest sympathies.
+  Extract the package roots from an npm tarball. A spec for exactly how this
+  works would be clearly too much to ask, so we're saying any directory that
+  contains a package.json is a root.
+
+  Return the root, and the deserialized package.json
   """
-  member = input.getmember('package/package.json')
-  return json.load(input.extractfile(member))
-
-
-def _copy_tar_files(name, src, dst, filter=None):
   for member in src.getmembers():
-    if filter and not filter(member):
-      continue
+    if not member.isfile(): continue
+    name = member.name
+    if os.path.basename(name) == 'package.json':
+      root    = os.path.dirname(name)
+      package = json.load(src.extractfile(member))
+      yield root, package
 
-    src_name = member.name
-    dst_name = src_name.replace('package', name, 1)
-    info = tarfile.TarInfo(dst_name)
+
+def _copy_package(src, dst, root, package):
+  dst_dir = package['name']
+  deps    = {}
+
+  for dep, version in package.get('dependencies', {}).items():
+    # Ignore dependencies in the @types/ namepace
+    if dep.startswith('@types/'): continue
+
+    deps[dep] = version
+
+  for member in src.getmembers():
+    if not member.isfile(): continue
+    if not member.path.startswith(root): continue
+
+    package_path = member.path.replace(root+'/', '', 1)
+    dst_path = os.path.join(dst_dir, package_path)
+
+    info = tarfile.TarInfo(dst_path)
     info.size = member.size
-    dst.addfile(info, fileobj=src.extractfile(src_name))
+    dst.addfile(info, fileobj=src.extractfile(member.path))
+
+  return deps
 
 
-def _write_buildfile(filename, package, js_tar_name, ignore_deps,
+def _copy_tar_files(src, dst):
+  deps = {}
+  for root, package in _package_roots(src):
+    deps.update(_copy_package(src, dst, root, package))
+  return deps
+
+
+def _write_buildfile(filename, deps, js_tar_name, ignore_deps,
                      visibility=None):
-
   if visibility is None:
     visibility = ['//visibility:public']
-
-  deps = []
-  dep_comments = []
 
   to_ignore = set()
   if ignore_deps: to_ignore = set(ignore_deps)
 
-  for dep, ver in package.get('dependencies', {}).items():
+  bazel_deps = []
+  dep_infos  = []
+  for dep in sorted(deps.keys()):
+    if dep in to_ignore: continue
+
     bazel_name = dep.replace('-', '.')
-    if bazel_name in to_ignore:
-      continue
-    deps.append('@%s//:lib' % bazel_name)
-    dep_comments.append('#  req: %s %s' % (dep, ver))
+    if bazel_name in to_ignore: continue
+
+    version = deps[dep]
+
+    bazel_deps.append('@%s//:lib' % bazel_name)
+    dep_infos.append('# %s %s' % (dep, version))
 
   with open(filename, 'w') as out:
     out.write(_BUILDFILE.substitute({
-      'name':         package['name'],
-      'version':      package.get('version', 'n/a'),
-      'output':       os.path.basename(js_tar_name),
-      'deps':         json.dumps(sorted(deps), indent=4),
-      'dep_comments': '\n'.join(dep_comments),
-      'visibility':   json.dumps(visibility),
+      'js_tar':     os.path.basename(js_tar_name),
+      'deps':       json.dumps(bazel_deps, indent=4),
+      'dep_infos':  '\n'.join(dep_infos),
+      'visibility': json.dumps(visibility),
     }))
 
 
-def _main(buildfile, js_tar_name, npm_tar_name, types_tar_name, ts_defs,
-          ignore_deps):
-  js_tar  = tarfile.open(js_tar_name, 'w:gz')
-  npm_tar = tarfile.open(npm_tar_name)
-  package = _extract_package(npm_tar)
-  name    = package['name']
+def _main(buildfile, js_tar_name, npm_tar_names, ignore_deps):
+  js_tar = tarfile.open(js_tar_name, 'w:gz')
+  deps   = {}
 
-  # Copy source files over to the js_tar
-  _copy_tar_files(name, npm_tar, js_tar)
+  for npm_tar_name in npm_tar_names:
+    with tarfile.open(npm_tar_name) as npm_tar:
+      deps.update(_copy_tar_files(npm_tar, js_tar))
 
-  # If a types file is given, copy all .d.ts files overs
-  if types_tar_name:
-    types_tar = tarfile.open(types_tar_name)
-    _copy_tar_files(name, types_tar, js_tar, lambda m: m.name.endswith('.d.ts'))
-
-  # TODO: Copy ts_defs
-
-  # Write the BUILD file
-  _write_buildfile(buildfile, package, js_tar_name, ignore_deps)
+  _write_buildfile(buildfile, deps, js_tar_name, ignore_deps)
 
 
 def _parse_args(args):
@@ -123,9 +134,7 @@ def main(args):
   _main(
     buildfile      = params.buildfile,
     js_tar_name    = params.js_tar,
-    npm_tar_name   = params.npm_tar,
-    types_tar_name = params.types_tar,
-    ts_defs        = params.ts_defs,
+    npm_tar_names  = params.npm_tar,
     ignore_deps    = params.ignore_deps,
   )
 

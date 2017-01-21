@@ -36,50 +36,56 @@ def _download_npm_tar(ctx, filename, package, version, namespace=None,
   else:
     ctx.download(url, filename)
 
-  return filename
+  return ctx.path(filename)
 
 
 def _npm_install_impl(ctx):
   package       = ctx.attr.package
   version       = ctx.attr.version
   type_version  = ctx.attr.type_version
-  ts_defs       = ctx.attr.ts_defs
-  ignore_deps   = ctx.attr.ignore_deps
+  ignore_deps   = list(ctx.attr.ignore_deps)
+
+  if not version and not type_version:
+    fail('npm_install rule must declare either a version or type_version')
+
+  # Ensure we never depend on ourselves -- this sometimes happens when a type
+  # declaration (like moment's) states a dependency on the source library
+  ignore_deps.append(package)
 
   ctx.file('WORKSPACE', "workspace(name='%s')\n" % ctx.name, False)
-  npm_tar = _download_npm_tar(
-    ctx      = ctx,
-    filename = 'package.tgz',
-    package  = package,
-    version  = version,
-    sha256   = ctx.attr.sha256
-  )
+
+  npm_tars = []
+  if version:
+    tar = _download_npm_tar(
+      ctx      = ctx,
+      filename = 'package-%s.tgz' % version,
+      package  = package,
+      version  = version,
+      sha256   = ctx.attr.sha256
+    )
+    npm_tars.append(tar)
+
+  if type_version:
+    tar = _download_npm_tar(
+      ctx       = ctx,
+      filename  = 'types-%s.tgz' % type_version,
+      package   = package,
+      version   = type_version,
+      sha256    = ctx.attr.type_sha256,
+      namespace = '@types'
+    )
+    npm_tars.append(tar)
 
   js_tar = ctx.file('lib.tgz')
   cmd = [
     ctx.path(ctx.attr._npm_to_js_tar),
     '--buildfile', ctx.path('BUILD'),
     '--js_tar',    ctx.path('lib.tgz'),
-    '--npm_tar',   ctx.path(npm_tar),
   ]
+  cmd += ['--npm_tar'] + npm_tars
+
   if ignore_deps:
     cmd += ['--ignore_deps'] + ignore_deps
-  if ts_defs:
-    cmd += ['--ts_defs'] + [ctx.path(ts_def) for ts_def in ts_defs]
-
-  # If a @types version has been supplied, download that tarball from NPM and
-  # append the argument to `npm_to_js_tar`
-  if type_version:
-    types_tar = _download_npm_tar(
-      ctx       = ctx,
-      filename  = 'types.tgz',
-      package   = package,
-      version   = type_version,
-      sha256    = ctx.attr.type_sha256,
-      namespace = '@types'
-    )
-    cmd += ['--types_tar', ctx.path(types_tar)]
-
 
   ctx.execute(cmd)
 
@@ -88,11 +94,10 @@ _npm_install = repository_rule(
   _npm_install_impl,
   attrs = {
     'package':      attr.string(mandatory=True),
-    'version':      attr.string(mandatory=True),
-    'sha256':       attr.string(mandatory=False),
-    'ts_defs':      attr.label_list(default=[]),
-    'type_version': attr.string(mandatory=False),
-    'type_sha256':  attr.string(mandatory=False),
+    'version':      attr.string(),
+    'sha256':       attr.string(),
+    'type_version': attr.string(),
+    'type_sha256':  attr.string(),
     'ignore_deps':  attr.string_list(),
 
     '_npm_to_js_tar': attr.label(

@@ -56,11 +56,15 @@ def _js_library_impl(ctx):
   js_tar = ctx.new_file('%s.tgz' % ctx.label.name)
   build_tar(ctx, ctx.files.srcs, [], js_tar)
 
+  ts_defs = set()
+  if ctx.attr.ts_defs:
+    ts_defs = ctx.attr.ts_defs.ts_defs
+
   return struct(
-    files  = set([js_tar]),
-    library_sources = ctx.files.srcs,
-    js_tar = js_tar,
-    deps   = transitive_tars(ctx.attr.deps)
+    files   = set([js_tar]),
+    js_tar  = js_tar,
+    deps    = transitive_tars(ctx.attr.deps),
+    ts_defs = ts_defs,
   )
 
 
@@ -79,10 +83,7 @@ def node_driver(ctx, output, js_tar, node, arguments=[]):
     '#!/bin/bash -eu',
     'set -o pipefail',
     'mkdir ./node_modules',
-    'function _cleanup {',
-    '  rm -rf ./node_modules',
-    '}',
-    'trap _cleanup EXIT',
+    'trap "{ rm -rf ./node_modules ; }" EXIT',
     'tar -xzf %s -C ./node_modules' % js_tar_path,
     'NODEPATH=$PWD {node} {arguments} "$@"'.format(
       node      = node.path,
@@ -158,6 +159,7 @@ js_library = rule(
   attrs = {
     'srcs':       attr.label_list(allow_files=True),
     'deps':       js_dep_attr,
+    'ts_defs':    attr.label(providers=['ts_defs']),
     '_build_tar': build_tar_attr,
   },
 )
