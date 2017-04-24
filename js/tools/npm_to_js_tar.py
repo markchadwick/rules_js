@@ -36,6 +36,11 @@ def _package_roots(src):
   for member in src.getmembers():
     if not member.isfile(): continue
     name = member.name
+
+    # Do not look in nested node_modules directories for dependencies
+    if '/node_modules/' in name:
+      continue
+
     if os.path.basename(name) == 'package.json':
       root    = os.path.dirname(name)
       package = json.load(src.extractfile(member))
