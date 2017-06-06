@@ -71,20 +71,31 @@ def _js_library_impl(ctx):
 def node_driver(ctx, output, js_tar, node, arguments=[]):
   safe_args = ["'%s'" % arg for arg in arguments]
 
-  # Most generated js_tar files can be resolved relative to the working
-  # directory of a binary (ie: A runfile). However, externals cannot. Try to
-  # resolve the js_tar using the short path, but if it attempts to walk up a
-  # directory, use the full path.
-  js_tar_path = js_tar.short_path
-  if js_tar_path.startswith('../'):
-    js_tar_path = js_tar.path
-
   content = [
     '#!/bin/bash -eu',
     'set -o pipefail',
+
+    # Get full path of the script and set it to `$self`. If it isn't absolute,
+    # prefix `$PWD` to ensure it is.
+    'case "$0" in',
+    '/*) self="$0" ;;',
+    '*)  self="${PWD}/${0}" ;;',
+    'esac',
+
+    # When executing as a binary target, Bazel will place our runfiles in the
+    # same name as this script with a '.runfiles' appended. When running as a
+    # test, however, it will set the environment variable, $TEST_SRCDIR to the
+    # value.
+    'runfiles_root="${self}.runfiles"',
+    'if [ -v TEST_SRCDIR ]; then',
+    '   runfiles_root="$TEST_SRCDIR"',
+    'fi',
+
+    'export RUNFILES="${runfiles_root}/%s"' % ctx.workspace_name,
+
     'mkdir ./node_modules',
     'trap "{ rm -rf ./node_modules ; }" EXIT',
-    'tar -xzf %s -C ./node_modules' % js_tar_path,
+    'tar -xzf "${RUNFILES}/%s" -C ./node_modules' % js_tar.short_path,
     'NODEPATH=$PWD {node} {arguments} "$@"'.format(
       node      = node.path,
       arguments = ' '.join(safe_args)
