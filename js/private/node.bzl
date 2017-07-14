@@ -1,4 +1,4 @@
-load('//js/private:npm.bzl', 'npm_install')
+load('//js/private:npm.bzl', 'npm_install', 'npm_tarball_install')
 
 def _node_buildfile(arch):
   return '\n'.join([
@@ -56,5 +56,70 @@ def js_repositories():
     ignore_deps  = [
       'browser.stdout',
       'growl',
+    ]
+  )
+
+  npm_tarball_install(
+    name = 'browserify',
+    url = 'https://s3.amazonaws.com/js.vistarmedia.com/browserify-14.4.0.tgz',
+    sha256 = 'deafadbb88c976fb2bf41e911dfc0a70e635a4073f1c8c49549eb964e96f9d62',
+    ignore_deps = [
+      'JSONStream',
+      'assert',
+      'browser-pack',
+      'browser-resolve',
+      'browserify-zlib',
+      'buffer',
+      'cached-path-relative',
+      'concat-stream',
+      'console-browserify',
+      'constants-browserify',
+      'crypto-browserify',
+      'defined',
+      'deps-sort',
+      'domain-browser',
+      'duplexer2',
+      'events',
+      'glob',
+      'has',
+      'htmlescape',
+      'https-browserify',
+      'inherits',
+      'insert-module-globals',
+      'labeled-stream-splicer',
+      'module-deps',
+      'os-browserify',
+      'parents',
+      'path-browserify',
+      'process',
+      'punycode',
+      'querystring-es3',
+      'read-only-stream',
+      'readable-stream',
+      'resolve',
+      'shasum',
+      'shell-quote',
+      'stream-browserify',
+      'stream-http',
+      'string_decoder',
+      'subarg',
+      'syntax-error',
+      'through2',
+      'timers-browserify',
+      'tty-browserify',
+      'url',
+      'util',
+      'vm-browserify',
+      'xtend',
+    ]
+  )
+
+  npm_tarball_install(
+    name = 'uglifyjs',
+    url = 'https://s3.amazonaws.com/js.vistarmedia.com/uglify-js-3.0.24.tgz',
+    sha256 = 'afc191cfb99b252d750fdae86bcd0e1e74a764a470d0298ffb6655322ae9a50f',
+    ignore_deps = [
+      'commander',
+      'source-map',
     ]
   )
