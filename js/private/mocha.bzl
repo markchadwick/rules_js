@@ -17,7 +17,8 @@ def _js_test_impl(ctx):
   )
 
   arguments = [
-    'node_modules/mocha/bin/mocha'
+    'node_modules/mocha/bin/mocha',
+    '--timeout=%s' % ctx.attr.mocha_timeout
   ] + ['node_modules/%s' % src.short_path for src in ctx.files.srcs]
 
   node_driver(ctx,
@@ -42,11 +43,12 @@ js_test = rule(
   _js_test_impl,
   test = True,
   attrs = {
-    'srcs':       attr.label_list(allow_files=True),
-    'deps':       js_dep_attr,
-    '_node':      node_attr,
-    '_build_tar': build_tar_attr,
-    '_mocha':     attr.label(default=Label('@mocha//:lib')),
+    'srcs':          attr.label_list(allow_files=True),
+    'deps':          js_dep_attr,
+    'mocha_timeout': attr.string(default='0'),
+    '_node':         node_attr,
+    '_build_tar':    build_tar_attr,
+    '_mocha':        attr.label(default=Label('@mocha//:lib')),
   },
   outputs = {
     'js_tar': '%{name}.tar.gz',
