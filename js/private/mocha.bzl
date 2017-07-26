@@ -29,7 +29,7 @@ def _js_test_impl(ctx):
   )
 
   runfiles = ctx.runfiles(
-    files = [js_tar, ctx.outputs.executable],
+    files = [js_tar, ctx.outputs.executable] + ctx.files.data,
     transitive_files = set([ctx.executable._node]),
   )
 
@@ -46,6 +46,7 @@ js_test = rule(
     'srcs':          attr.label_list(allow_files=True),
     'deps':          js_dep_attr,
     'mocha_timeout': attr.string(default='0'),
+    'data':          attr.label_list(allow_files=True),
     '_node':         node_attr,
     '_build_tar':    build_tar_attr,
     '_mocha':        attr.label(default=Label('@mocha//:lib')),
