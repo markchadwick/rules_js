@@ -27,6 +27,9 @@ def _js_bundle_impl(ctx):
     './node_modules/%s' % entry_js,
   ]
 
+  if ctx.attr.source_maps:
+    arguments.append('--debug')
+
   content = [
     '#!/bin/bash -eu',
     'set -o pipefail',
@@ -61,6 +64,7 @@ js_bundle = rule(
     'entry':       attr.label(allow_files=True, single_file=True),
     'js_tar':      attr.label(),
     'minified':    attr.bool(default=False),
+    'source_maps': attr.bool(default=False),
     '_node':       node_attr,
     '_build_tar':  build_tar_attr,
     '_browserify': attr.label(default=Label('@browserify//:lib')),
