@@ -93,8 +93,10 @@ def node_driver(ctx, output, js_tar, node, arguments=[]):
 
     'export RUNFILES="${runfiles_root}/%s"' % ctx.workspace_name,
 
-    'mkdir ./node_modules',
-    'trap "{ rm -rf ./node_modules ; }" EXIT',
+    'if ! [[ -d ./node_modules ]]; then',
+    '  mkdir ./node_modules',
+    '  trap "{ rm -rf ./node_modules ; }" EXIT',
+    'fi',
     'tar -xzf "${RUNFILES}/%s" -C ./node_modules' % js_tar.short_path,
     'NODEPATH=$PWD {node} {arguments} "$@"'.format(
       node      = node.path,
@@ -106,6 +108,11 @@ def node_driver(ctx, output, js_tar, node, arguments=[]):
     output     = output,
     content    = '\n'.join(content),
     executable = True,
+  )
+
+  return struct(
+    files    = set([output]),
+    runfiles = ctx.runfiles(files=[node]),
   )
 
 
