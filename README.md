@@ -79,23 +79,23 @@ Both presently work in nearly all cases, but the behavior is not guaranteed as
 these rules evolve.
 
 ## Design
-Each build target produces metadata and a binary artifact, called a `js_tar`.
+Each build target produces metadata and a binary Javascript archive, or `jsar`.
 Each `js_library` emits its own js runtime files as a gzipped tarfile. The path
 of the files will be the fully-qualified import path. The metadata is as
 follows:
 
     ```python
     struct(
-      js_tar = <tarfile contining local library code>,
-      deps   = set(<js_tar>),
+      jsar = <this library's code>,
+      deps = set(<jsar>),
     )
     ```
 
-A `js_binary` target will create a "fat" tarfile -- its local code, and the code
+A `js_binary` target will create a "fat" archive -- its local code, and the code
 of all its transitive dependencies. It will also create a runner script which
 will extract these files to a local `./node_modules`, invoke each `src` file,
 then remove `./node_modules`.
 
 External dependencies created with `npm_install` will use a behind-the-scenes
-rule, `js_tar` to directly create the tarfile containing the sources with
-working directly with `js_library`. This is subject to change.
+rule, `jsar` to directly create the tarfile containing the sources with working
+directly with `js_library`. This is subject to change.

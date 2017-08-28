@@ -1,8 +1,8 @@
 load('@io_bazel_rules_js//js/private:rules.bzl',
-  'build_tar',
+  'build_jsar',
   'node_driver',
-  'transitive_tars',
-  'build_tar_attr',
+  'transitive_jsars',
+  'jsar_attr',
   'node_attr',
   'js_dep_attr')
 
@@ -10,10 +10,10 @@ load('@io_bazel_rules_js//js/private:rules.bzl',
 def _js_test_impl(ctx):
   deps = ctx.attr.deps + [ctx.attr._mocha]
 
-  js_tar = build_tar(ctx,
+  jsar = build_jsar(ctx,
     files  = ctx.files.srcs,
-    tars   = transitive_tars(deps),
-    output = ctx.outputs.js_tar
+    jsars  = transitive_jsars(deps),
+    output = ctx.outputs.jsar,
   )
 
   arguments = [
@@ -23,18 +23,22 @@ def _js_test_impl(ctx):
 
   node_driver(ctx,
     output    = ctx.outputs.executable,
-    js_tar    = js_tar,
+    jsar      = jsar,
     node      = ctx.executable._node,
     arguments = arguments,
   )
 
   runfiles = ctx.runfiles(
-    files = [js_tar, ctx.outputs.executable] + ctx.files.data,
-    transitive_files = set([ctx.executable._node]),
+    files = [
+      ctx.executable._jsar,
+      ctx.executable._node,
+      jsar,
+    ] + ctx.files.data,
+    collect_default  = True,
   )
 
   return struct(
-    files    = set([js_tar, ctx.outputs.executable]),
+    files    = set([jsar, ctx.outputs.executable]),
     runfiles = runfiles,
   )
 
@@ -46,12 +50,12 @@ js_test = rule(
     'srcs':          attr.label_list(allow_files=True),
     'deps':          js_dep_attr,
     'mocha_timeout': attr.string(default='0'),
-    'data':          attr.label_list(allow_files=True),
+    'data':          attr.label_list(allow_files=True, cfg='data'),
     '_node':         node_attr,
-    '_build_tar':    build_tar_attr,
+    '_jsar':         jsar_attr,
     '_mocha':        attr.label(default=Label('@mocha//:lib')),
   },
   outputs = {
-    'js_tar': '%{name}.tar.gz',
+    'jsar': '%{name}.jsar',
   },
 )

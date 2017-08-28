@@ -56,11 +56,10 @@ def _create_workspace(ctx, tarballs):
     )
     npm_tars.append(npm_tar)
 
-  js_tar = ctx.file('lib.tgz')
   cmd = [
-    ctx.path(ctx.attr._npm_to_js_tar),
+    ctx.path(ctx.attr._npm_to_jsar),
     '--buildfile', ctx.path('BUILD'),
-    '--js_tar',    ctx.path('lib.tgz'),
+    '--output',    ctx.path('lib.tgz'),
   ]
 
   cmd += ['--npm_tar'] + npm_tars
@@ -144,8 +143,8 @@ attrs = {
     'type_sha256':  attr.string(),
     'ignore_deps':  attr.string_list(),
 
-    '_npm_to_js_tar': attr.label(
-      default    = Label('//js/tools:npm_to_js_tar.py'),
+    '_npm_to_jsar': attr.label(
+      default    = Label('//js/tools:npm_to_jsar.py'),
       cfg        = 'host',
       executable = True),
 }

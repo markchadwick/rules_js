@@ -1,3 +1,5 @@
+load('@io_bazel_rules_js//js:def.bzl', 'js_binary')
+
 config_setting(
   name = 'k8',
   values = {'host_cpu': 'k8'},
@@ -16,3 +18,12 @@ filegroup(
   }),
   visibility = ['//visibility:public'],
 )
+
+js_binary(
+  name = 'uglify',
+  src  = 'uglify.js',
+  deps = ['@uglifyjs//:lib'],
+  visibility = ['//visibility:public'],
+)
+
+exports_files(['browserify.js'])

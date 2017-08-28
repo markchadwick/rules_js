@@ -8,18 +8,18 @@ import tarfile
 
 parser = argparse.ArgumentParser('Convert NPM tarballs into js_tar impls')
 parser.add_argument('--buildfile')
-parser.add_argument('--js_tar')
+parser.add_argument('--output')
 parser.add_argument('--npm_tar', nargs='+')
 parser.add_argument('--ignore_deps', nargs='*')
 
 
 _BUILDFILE = string.Template("""
-load('@io_bazel_rules_js//js/private:rules.bzl', 'js_tar')
+load('@io_bazel_rules_js//js/private:rules.bzl', 'jsar')
 ${dep_infos}
-js_tar(
-  name   = 'lib',
-  js_tar = '${js_tar}',
-  deps   = ${deps},
+jsar(
+  name = 'lib',
+  tar  = '${js_tar}',
+  deps = ${deps},
   visibility = ${visibility},
 )
 """)
@@ -123,7 +123,7 @@ def _parse_args(args):
   params = parser.parse_args(args)
 
   if params.buildfile is None or \
-     params.js_tar is None or \
+     params.output is None or \
      params.npm_tar is None:
     return None
 
@@ -138,7 +138,7 @@ def main(args):
 
   _main(
     buildfile      = params.buildfile,
-    js_tar_name    = params.js_tar,
+    js_tar_name    = params.output,
     npm_tar_names  = params.npm_tar,
     ignore_deps    = params.ignore_deps,
   )

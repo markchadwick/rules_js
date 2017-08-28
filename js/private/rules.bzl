@@ -1,74 +1,104 @@
 js_type          = FileType(['.js'])
-js_tar_type      = FileType(['.tgz', '.tar.gz'])
-js_dep_providers = ['js_tar', 'deps']
+js_dep_providers = ['jsar', 'deps']
 
 
-def transitive_tars(deps):
-  tars = set(order='compile')
+def transitive_jsars(deps):
+  jsars = depset()
   for dep in deps:
-    tars += dep.deps | [dep.js_tar]
-  return tars
+    jsars += dep.deps | [dep.jsar]
+  return jsars
 
 
-def _js_tar_impl(ctx):
-  js_tar = ctx.file.js_tar
+def _jsar_impl(ctx):
+  tar  = ctx.file.tar
+  jsar = ctx.outputs.jsar
 
-  return struct(
-    files  = set([js_tar]),
-    js_tar = js_tar,
-    deps   = transitive_tars(ctx.attr.deps),
+  arguments = [
+    'fromtarball',
+    '-output', jsar.path,
+    tar.path,
+  ]
+
+  ctx.action(
+    executable = ctx.executable._jsar,
+    arguments  = arguments,
+    inputs     = [tar],
+    outputs    = [jsar],
+    mnemonic   = 'PackageTarJsar',
   )
 
-def _js_tar_path(src):
+  return struct(
+    files = set([jsar]),
+    jsar  = jsar,
+    deps  = transitive_jsars(ctx.attr.deps),
+  )
+
+def _jsar_path(src):
   path = src.short_path
   if path.startswith('../'):
     return path[3:]
   return path
 
-def build_tar(ctx, files, tars, output):
-  args = [
-    '--output=' + output.path,
-    '--directory=/',
-    '--mode=0555',
-    '--compression=gz',
-  ] + [
-    '--file=%s=%s' % (s.path, _js_tar_path(s)) for s in files
-  ] + [
-    '--tar=%s' % t.path for t in tars
-  ]
-  arg_file = ctx.new_file('%s.args' % ctx.label.name)
-  ctx.file_action(arg_file, '\n'.join(args))
 
-  inputs = list(files) + list(tars) + [arg_file]
+def _build_src_jsar(ctx, srcs, output):
+  arguments = [
+    'bundle',
+    '-output', output.path,
+  ] + [
+    '%s=/%s' % (s.path, _jsar_path(s)) for s in srcs
+  ]
 
   ctx.action(
-    executable = ctx.executable._build_tar,
-    arguments  = ['--flagfile=' + arg_file.path],
-    inputs     = inputs,
+    executable = ctx.executable._jsar,
+    arguments  = arguments,
+    inputs     = list(srcs),
     outputs    = [output],
-    mnemonic   = 'PackageJsTar',
+    mnemonic   = 'PackageSrcJsar',
   )
 
   return output
 
 
+def _build_dep_jsar(ctx, deps, output):
+  command = ' '.join(
+    ['cat'] + [dep.path for dep in deps] + \
+    ['>', output.path]
+  )
+
+  ctx.action(
+    command    = command,
+    inputs     = list(deps),
+    outputs    = [output],
+    mnemonic   = 'PackageDepJsar',
+  )
+
+  return output
+
+
+def build_jsar(ctx, files, jsars, output):
+  src_jsar = _build_src_jsar(
+    ctx, files, ctx.new_file(ctx.label.name +'.srcJsar'))
+
+  return _build_dep_jsar(ctx, jsars + [src_jsar], output)
+
+
 def _js_library_impl(ctx):
-  js_tar = ctx.new_file('%s.tgz' % ctx.label.name)
-  build_tar(ctx, ctx.files.srcs, [], js_tar)
+  jsar = ctx.outputs.jsar
+  build_jsar(ctx, ctx.files.srcs, [], jsar)
 
   ts_defs = set()
   if ctx.attr.ts_defs:
     ts_defs = ctx.attr.ts_defs.ts_defs
 
   return struct(
-    files   = set([js_tar]),
-    js_tar  = js_tar,
-    deps    = transitive_tars(ctx.attr.deps),
+    files   = set([jsar]),
+    jsar    = jsar,
+    deps    = transitive_jsars(ctx.attr.deps),
     ts_defs = ts_defs,
   )
 
 
-def node_driver(ctx, output, js_tar, node, arguments=[]):
+def node_driver(ctx, output, jsar, node, arguments=[]):
   safe_args = ["'%s'" % arg for arg in arguments]
 
   content = [
@@ -97,7 +127,11 @@ def node_driver(ctx, output, js_tar, node, arguments=[]):
     '  mkdir ./node_modules',
     '  trap "{ rm -rf ./node_modules ; }" EXIT',
     'fi',
-    'tar -xzf "${RUNFILES}/%s" -C ./node_modules' % js_tar.short_path,
+
+    '${RUNFILES}/%s unbundle -output ./node_modules "${RUNFILES}/%s"' % (
+      ctx.executable._jsar.short_path,
+      jsar.short_path),
+
     'NODEPATH=$PWD {node} {arguments} "$@"'.format(
       node      = node.path,
       arguments = ' '.join(safe_args)
@@ -110,47 +144,46 @@ def node_driver(ctx, output, js_tar, node, arguments=[]):
     executable = True,
   )
 
-  return struct(
-    files    = set([output]),
-    runfiles = ctx.runfiles(files=[node]),
-  )
-
 
 def _js_binary_impl(ctx):
-  js_tar = build_tar(ctx,
+  jsar = build_jsar(ctx,
     files  = ctx.files.src,
-    tars   = transitive_tars(ctx.attr.deps),
-    output = ctx.outputs.js_tar
+    jsars  = transitive_jsars(ctx.attr.deps),
+    output = ctx.outputs.jsar,
   )
 
-  arguments = ['./node_modules/%s' % _js_tar_path(ctx.file.src)]
+  arguments = ['./node_modules/%s' % _jsar_path(ctx.file.src)]
 
   node_driver(ctx,
     output    = ctx.outputs.executable,
-    js_tar    = js_tar,
+    jsar      = jsar,
     node      = ctx.executable._node,
     arguments = arguments,
   )
 
   runfiles = ctx.runfiles(
-    files = [js_tar],
-    transitive_files = set([ctx.executable._node]),
+    files = [
+      jsar,
+      ctx.executable._node,
+      ctx.executable._jsar,
+    ],
+    collect_default = True,
   )
 
   return struct(
-    files    = set([js_tar, ctx.outputs.executable]),
+    files    = set([jsar, ctx.outputs.executable]),
     runfiles = runfiles,
-    js_tar   = js_tar,
+    jsar     = jsar,
+    deps     = depset(),
     main     = ctx.file.src,
   )
 
 # ------------------------------------------------------------------------------
 
-build_tar_attr = attr.label(
-  default     = Label('@bazel_tools//tools/build_defs/pkg:build_tar'),
-  cfg         = 'host',
-  executable  = True,
-  allow_files = True)
+jsar_attr = attr.label(
+  default    = Label('@io_bazel_rules_js//js/tools:jsar-bin'),
+  cfg        = 'data',
+  executable = True)
 
 node_attr = attr.label(
   default     = Label('//js/toolchain:node'),
@@ -161,24 +194,32 @@ node_attr = attr.label(
 js_dep_attr = attr.label_list(providers=js_dep_providers)
 
 
-js_tar = rule(
-  _js_tar_impl,
+jsar = rule(
+  _jsar_impl,
   attrs = {
-    'js_tar':  attr.label(
+    'tar':   attr.label(
       allow_files = FileType(['.tgz', '.tar.gz']),
       single_file = True,
       mandatory   = True),
-    'deps': js_dep_attr,
-  }
+
+    'deps':  js_dep_attr,
+    '_jsar': jsar_attr,
+  },
+  outputs = {
+    'jsar': '%{name}.jsar',
+  },
 )
 
 js_library = rule(
   _js_library_impl,
   attrs = {
-    'srcs':       attr.label_list(allow_files=True),
-    'deps':       js_dep_attr,
-    'ts_defs':    attr.label(providers=['ts_defs']),
-    '_build_tar': build_tar_attr,
+    'srcs':    attr.label_list(allow_files=True),
+    'deps':    js_dep_attr,
+    'ts_defs': attr.label(providers=['ts_defs']),
+    '_jsar':   jsar_attr,
+  },
+  outputs = {
+    'jsar': '%{name}.jsar',
   },
 )
 
@@ -186,12 +227,12 @@ js_binary = rule(
   _js_binary_impl,
   executable = True,
   attrs = {
-    'src':        attr.label(allow_files=True, single_file=True),
-    'deps':       js_dep_attr,
-    '_build_tar': build_tar_attr,
-    '_node':      node_attr
+    'src':     attr.label(allow_files=True, single_file=True),
+    'deps':    js_dep_attr,
+    '_jsar':   jsar_attr,
+    '_node':   node_attr,
   },
   outputs = {
-    'js_tar': '%{name}.tar.gz',
+    'jsar': '%{name}.jsar',
   },
 )
