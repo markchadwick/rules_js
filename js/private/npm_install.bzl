@@ -1,14 +1,12 @@
 
 def _install_tarballs(ctx, tarballs):
-  root         = str(ctx.path('.'))
-  # tarball_path = str(ctx.path(tarball))
-  installer    = str(ctx.path(ctx.attr._npm_to_js_library))
+  root      = str(ctx.path('.'))
+  installer = str(ctx.path(ctx.attr._npm_to_js_library))
 
   tarball_args = []
   for tarball in tarballs:
     tarball_args.append(struct(
       type = 'tarball',
-      foo = 'bar',
       src  = tarball,
     ))
 

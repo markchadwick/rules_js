@@ -16,8 +16,10 @@ def _bazel_name(npm_name):
 
 def _js_library_buildfile(name, srcs, deps, package=None):
   label_list = lambda a: json.dumps(a, indent=4)
-  return """
-load("@com_vistarmedia_rules_js//js:def.bzl", "js_library")
+  if package is not None:
+    package = json.dumps(package)
+
+  return """load("@com_vistarmedia_rules_js//js:def.bzl", "js_library")
 js_library(
   name="{name}",
   srcs={srcs},
@@ -37,8 +39,9 @@ class Workspace(object):
   def __init__(self, name, root, ignore_deps):
     self._name = name
     self._root = root
-    self._ignore_deps = ignore_deps
     self._packages = []
+
+    self._ignore_deps = [_bazel_name(dep) for dep in ignore_deps]
 
   def package(self, cfg):
     npm_name   = cfg['name']
@@ -69,7 +72,7 @@ class Workspace(object):
   def _create_package(self, package):
     build_path = os.path.join(package.root, 'BUILD')
     with open(build_path, 'w') as out:
-      out.write(package.buildfile())
+      out.write(package.buildfile(self._ignore_deps))
 
   def _package_name(self, package):
     return '@%s//%s' % (self._name, package._bazel_name)
@@ -96,23 +99,23 @@ class Package(object):
 
     self._files.append(name)
 
-  def buildfile(self):
-    # return _js_library_buildfile(
-    #   name = self._
-    # )
-    # return 
-    return '\n'.join([
-      'load("@com_vistarmedia_rules_js//js:def.bzl", "js_library")',
-      'js_library(',
-      '  name = "{bazel_name}",',
-      '  package = "{npm_name}",',
-      '  srcs = {srcs},',
-      '  visibility = ["//visibility:public"],', # TODO
-      ')',
-    ]).format(
-      npm_name   = self._npm_name,
-      bazel_name = self._bazel_name,
-      srcs       = json.dumps(self._files, indent=2),
+  def buildfile(self, ignore_deps):
+    deps = []
+
+    for dep, _ in self._cfg.get('dependencies', {}).items():
+      name = _bazel_name(dep)
+
+      if name in ignore_deps:
+        continue
+
+      target = '@%s//:lib' % name
+      deps.append(target)
+
+    return _js_library_buildfile(
+      name    = self._bazel_name,
+      package = self._npm_name,
+      srcs    = self._files,
+      deps    = deps,
     )
 
 
