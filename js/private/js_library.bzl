@@ -1,10 +1,19 @@
 
-def _symlink_path(f):
-  return 'node_modules/' + f.path
+def _symlink_path(ctx, f):
+  if ctx.attr.package:
+    return '/'.join([
+      'node_modules',
+      ctx.attr.package,
+      f.path.replace(ctx.label.package, '', 1),
+    ])
+  return '/'.join([
+      'node_modules',
+      f.path,
+  ])
 
 
 def _js_library_impl(ctx):
-  symlinks = {_symlink_path(f): f for f in ctx.files.srcs}
+  symlinks = {_symlink_path(ctx, f): f for f in ctx.files.srcs}
 
   runfiles = ctx.runfiles(
     root_symlinks   = symlinks,
@@ -21,7 +30,8 @@ def _js_library_impl(ctx):
 js_library = rule(
   _js_library_impl,
   attrs = {
-    'srcs': attr.label_list(allow_files=True),
-    'deps': attr.label_list(),
+    'srcs':    attr.label_list(allow_files=True),
+    'deps':    attr.label_list(),
+    'package': attr.string(),
   },
 )

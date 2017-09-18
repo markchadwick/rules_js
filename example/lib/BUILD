@@ -6,3 +6,15 @@ js_library(
   name = 'double',
   srcs = ['double.js'],
 )
+
+js_library(
+  name    = 'custom-package',
+  package = 'cool-doubling',
+  srcs    = ['double.js'],
+)
+
+js_library(
+  name    = 'nested-package',
+  package = 'cool-triple',
+  srcs    = ['nested/triple.js'],
+)

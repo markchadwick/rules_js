@@ -42,3 +42,33 @@ sh_test(
   srcs = ['simple-dep-test.sh'],
   data = [':simple-dep'],
 )
+
+js_binary(
+  name = 'custom-package-dep',
+  src  = 'custom-package-dep.js',
+  deps = [
+    '//example/lib:custom-package',
+  ],
+)
+
+sh_test(
+  name = 'custom-package-dep-test',
+  size = 'small',
+  srcs = ['custom-package-dep.sh'],
+  data = [':custom-package-dep'],
+)
+
+js_binary(
+  name = 'nested-package',
+  src  = 'nested-package.js',
+  deps = [
+    '//example/lib:nested-package',
+  ],
+)
+
+sh_test(
+  name = 'nested-package-test',
+  size = 'small',
+  srcs = ['nested-package-test.sh'],
+  data = [':nested-package'],
+)
