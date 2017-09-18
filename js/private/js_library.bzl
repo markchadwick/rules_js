@@ -22,6 +22,7 @@ def _js_library_impl(ctx):
   symlinks = {_symlink_path(ctx, f): f for f in ctx.files.srcs}
 
   runfiles = ctx.runfiles(
+    files           = ctx.files.srcs,
     root_symlinks   = symlinks,
     collect_default = True,
     collect_data    = True,

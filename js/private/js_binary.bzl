@@ -28,5 +28,6 @@ def js_binary(name, src, **kwargs):
   node_binary(
     name       = name,
     arguments  = arguments,
-    deps       = [lib_name, src_name]
+    deps       = [lib_name, src_name],
+    visibility = visibility,
   )

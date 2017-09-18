@@ -11,8 +11,8 @@ def _node_binary_impl(ctx):
     # Get full path of the script and set it to `$self`. If it isn't absolute,
     # prefix `$PWD` to ensure it is.
     'case "$0" in',
-    '/*) self="$0" ;;',
-    '*)  self="${PWD}/${0}" ;;',
+    '/*) export self="$0" ;;',
+    '*)  export self="${PWD}/${0}" ;;',
     'esac',
 
     # When executing as a binary target, Bazel will place our runfiles in the
@@ -25,14 +25,11 @@ def _node_binary_impl(ctx):
     'fi',
 
     'export RUNFILES="${runfiles_root}/%s"' % ctx.workspace_name,
-    'export NODE_PATH=../node_modules',
+    'export NODE_PATH="${runfiles_root}/node_modules"',
+    # 'export NODE_PATH="${runfiles_root}/node_modules"',
 
-    # 'echo -------------------------------------------',
-    # 'find -L $NODE_PATH -type f -maxdepth 4',
-    # 'echo -------------------------------------------',
-
-    'exec {node} {arguments} "$@"'.format(
-      node      = ctx.executable._node.path,
+    'NODE="${RUNFILES}/%s"' % ctx.executable._node.short_path,
+    'exec $NODE {arguments} "$@"'.format(
       arguments = ' '.join(arguments)
     )
   ]
@@ -43,10 +40,10 @@ def _node_binary_impl(ctx):
   )
 
   runfiles = ctx.runfiles(
-    files = ctx.files._node,
-    collect_default = True,
-    collect_data    = True,
+    files = ctx.files._node + [ctx.outputs.executable],
   )
+  for dep in ctx.attr.deps:
+    runfiles = runfiles.merge(dep.default_runfiles)
 
   return struct(
     files   = set([ctx.outputs.executable]),
