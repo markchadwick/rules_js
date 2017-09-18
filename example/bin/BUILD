@@ -77,7 +77,7 @@ js_binary(
   name = 'third-party-dep',
   src  = 'third-party-dep.js',
   deps = [
-    '@lodash//lodash',
+    '@lodash//:lib',
   ],
 )
 

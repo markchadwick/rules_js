@@ -9,19 +9,42 @@ import tarfile
 
 def _bazel_name(npm_name):
   return npm_name\
-    .replace('-', '.')
+    .replace('-', '.')\
+    .replace('/', '_')\
+    .replace('@', '_')
+
+
+def _js_library_buildfile(name, srcs, deps, package=None):
+  label_list = lambda a: json.dumps(a, indent=4)
+  return """
+load("@com_vistarmedia_rules_js//js:def.bzl", "js_library")
+js_library(
+  name="{name}",
+  srcs={srcs},
+  deps={deps},
+  package={package},
+  visibility=["//visibility:public"], # TODO
+)
+  """.format(
+    name = name,
+    srcs = label_list(srcs),
+    deps = label_list(deps),
+    package = package,
+  )
 
 
 class Workspace(object):
-  def __init__(self, root):
+  def __init__(self, name, root, ignore_deps):
+    self._name = name
     self._root = root
+    self._ignore_deps = ignore_deps
     self._packages = []
 
   def package(self, cfg):
     npm_name   = cfg['name']
     bazel_name = _bazel_name(npm_name)
 
-    package_root = os.path.join(self._root, npm_name)
+    package_root = os.path.join(self._root, bazel_name)
     package = Package(package_root, cfg, npm_name, bazel_name)
     self._packages.append(package)
     return package
@@ -30,10 +53,26 @@ class Workspace(object):
     for package in self._packages:
       self._create_package(package)
 
+    self._create_buildfile()
+
+  def _create_buildfile(self):
+    deps = [self._package_name(p) for p in self._packages]
+
+    build_root = os.path.join(self._root, 'BUILD')
+    with open(build_root, 'w') as build:
+      build.write(_js_library_buildfile(
+        name = 'lib',
+        srcs = [],
+        deps = deps,
+      ))
+
   def _create_package(self, package):
     build_path = os.path.join(package.root, 'BUILD')
     with open(build_path, 'w') as out:
       out.write(package.buildfile())
+
+  def _package_name(self, package):
+    return '@%s//%s' % (self._name, package._bazel_name)
 
 
 class Package(object):
@@ -58,6 +97,10 @@ class Package(object):
     self._files.append(name)
 
   def buildfile(self):
+    # return _js_library_buildfile(
+    #   name = self._
+    # )
+    # return 
     return '\n'.join([
       'load("@com_vistarmedia_rules_js//js:def.bzl", "js_library")',
       'js_library(',
@@ -93,8 +136,8 @@ def _tarball_packages(src):
       yield root, package
 
 
-def tarball(root, src):
-  workspace = Workspace(root)
+def _install_tarball(workspace, tarball):
+  src = tarball['src']
 
   with tarfile.open(src) as tarball:
     for root, cfg in _tarball_packages(tarball):
@@ -107,15 +150,19 @@ def tarball(root, src):
         name = os.path.relpath(src.path, root)
         package.add_file(name, tarball.extractfile(src).read())
 
+
+def main(name, root, deps, ignore_deps):
+  workspace = Workspace(name, root, ignore_deps)
+  for dep in deps:
+    if dep['type'] == 'tarball':
+      _install_tarball(workspace, dep)
+
+    else:
+      raise Exception('Unknown type: %s' % type)
+
   workspace.create()
-  print('OK!')
-
-
-def main(type, **kwargs):
-  if type == 'tarball':
-    return tarball(**kwargs)
-
-  raise Exception('Unknown type: %s' % type)
+  from random import randint
+  print('ok!', randint(0, 666))
 
 if __name__ == '__main__':
   sys.stdout = open('/tmp/stdout', 'w')
