@@ -27,6 +27,10 @@ def _node_binary_impl(ctx):
     'export RUNFILES="${runfiles_root}/%s"' % ctx.workspace_name,
     'export NODE_PATH=../node_modules',
 
+    # 'echo -------------------------------------------',
+    # 'find -L $NODE_PATH -type f -maxdepth 4',
+    # 'echo -------------------------------------------',
+
     'exec {node} {arguments} "$@"'.format(
       node      = ctx.executable._node.path,
       arguments = ' '.join(arguments)

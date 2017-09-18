@@ -7,6 +7,11 @@ import sys
 import tarfile
 
 
+def _bazel_name(npm_name):
+  return npm_name\
+    .replace('-', '.')
+
+
 class Workspace(object):
   def __init__(self, root):
     self._root = root
@@ -14,7 +19,7 @@ class Workspace(object):
 
   def package(self, cfg):
     npm_name   = cfg['name']
-    bazel_name = self._bazel_name(npm_name)
+    bazel_name = _bazel_name(npm_name)
 
     package_root = os.path.join(self._root, npm_name)
     package = Package(package_root, cfg, npm_name, bazel_name)
@@ -29,10 +34,6 @@ class Workspace(object):
     build_path = os.path.join(package.root, 'BUILD')
     with open(build_path, 'w') as out:
       out.write(package.buildfile())
-
-  def _bazel_name(self, name):
-    return name\
-      .replace('-', '.')
 
 
 class Package(object):
@@ -60,11 +61,16 @@ class Package(object):
     return '\n'.join([
       'load("@com_vistarmedia_rules_js//js:def.bzl", "js_library")',
       'js_library(',
-      '  name = "%s",' % self._bazel_name,
-      '  package = "%s",' % self._npm_name,
-      '  srcs = %s,' % json.dumps(self._files, indent=2),
+      '  name = "{bazel_name}",',
+      '  package = "{npm_name}",',
+      '  srcs = {srcs},',
+      '  visibility = ["//visibility:public"],', # TODO
       ')',
-    ])
+    ]).format(
+      npm_name   = self._npm_name,
+      bazel_name = self._bazel_name,
+      srcs       = json.dumps(self._files, indent=2),
+    )
 
 
 def _tarball_packages(src):
@@ -99,7 +105,7 @@ def tarball(root, src):
         if not src.path.startswith(root): continue
 
         name = os.path.relpath(src.path, root)
-        package.add_file(name, src.tobuf())
+        package.add_file(name, tarball.extractfile(src).read())
 
   workspace.create()
   print('OK!')

@@ -72,3 +72,18 @@ sh_test(
   srcs = ['nested-package-test.sh'],
   data = [':nested-package'],
 )
+
+js_binary(
+  name = 'third-party-dep',
+  src  = 'third-party-dep.js',
+  deps = [
+    '@lodash//lodash',
+  ],
+)
+
+sh_test(
+  name = 'third-party-dep-test',
+  size = 'small',
+  srcs = ['third-party-dep-test.sh'],
+  data = [':third-party-dep'],
+)

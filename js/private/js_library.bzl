@@ -1,15 +1,21 @@
 
 def _symlink_path(ctx, f):
+  path = ['node_modules']
   if ctx.attr.package:
-    return '/'.join([
-      'node_modules',
+    root = ctx.label.package
+    workspace_root = ctx.label.workspace_root
+    if workspace_root:
+      root = ctx.label.workspace_root + '/' + root
+
+    path += [
       ctx.attr.package,
-      f.path.replace(ctx.label.package, '', 1),
-    ])
-  return '/'.join([
-      'node_modules',
-      f.path,
-  ])
+      f.path.replace(root, '', 1),
+    ]
+
+  else:
+    path.append(f.path)
+
+  return '/'.join(path)
 
 
 def _js_library_impl(ctx):
