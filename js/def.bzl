@@ -1,5 +1,6 @@
 load('//js/private:js_binary.bzl', 'js_binary')
+load('//js/private:js_compiler.bzl', 'js_compiler')
 load('//js/private:js_library.bzl', 'js_library')
 load('//js/private:js_repositories.bzl', 'js_repositories')
-load('//js/private:node_binary.bzl',  'node_binary')
-load('//js/private:npm_install.bzl',  'npm_install')
+load('//js/private:node_binary.bzl', 'node_binary')
+load('//js/private:npm_install.bzl', 'npm_install')

@@ -18,19 +18,21 @@ def _symlink_path(ctx, f):
   return '/'.join(path)
 
 
-def _js_library_impl(ctx):
-  symlinks = {_symlink_path(ctx, f): f for f in ctx.files.srcs}
+def _symlinks(ctx, files):
+  return {_symlink_path(ctx, f): f for f in files}
 
-  runfiles = ctx.runfiles(
-    files           = ctx.files.srcs,
-    root_symlinks   = symlinks,
-    collect_default = True,
-    collect_data    = True,
-  )
+
+def _js_library_impl(ctx):
+  srcs = ctx.files.srcs
 
   return struct(
-    files    = set(ctx.files.srcs),
-    runfiles = runfiles,
+    files    = set(srcs),
+    runfiles = ctx.runfiles(
+      files           = srcs,
+      root_symlinks   = _symlinks(ctx, srcs),
+      collect_default = True,
+      collect_data    = True,
+    ),
   )
 
 
