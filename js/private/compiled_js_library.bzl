@@ -24,7 +24,8 @@ def _compiled_js_library_impl(ctx):
   )
 
   return struct(
-    files = set(outputs),
+    files    = depset(outputs),
+    runfiles = ctx.runfiles(files=outputs),
   )
 
 compiled_js_library = rule(
