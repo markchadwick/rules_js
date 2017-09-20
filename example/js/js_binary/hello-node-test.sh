@@ -4,7 +4,7 @@
 # `console.log` then prints its return value, `undefined`.
 expected="Hello World!
 undefined"
-actual=$(example/js_binary/hello-node)
+actual=$(example/js/js_binary/hello-node)
 if [ "$expected" != "$actual" ] ; then
   echo "Expected '${expected}' got '${actual}'"
   exit 2

@@ -32,7 +32,7 @@ js_binary(
   name = 'simple-dep',
   src  = 'simple-dep.js',
   deps = [
-    '//example/js_library:double',
+    '//example/js/js_library:double',
   ],
 )
 
@@ -47,7 +47,7 @@ js_binary(
   name = 'custom-package-dep',
   src  = 'custom-package-dep.js',
   deps = [
-    '//example/js_library:custom-package',
+    '//example/js/js_library:custom-package',
   ],
 )
 
@@ -62,7 +62,7 @@ js_binary(
   name = 'nested-package',
   src  = 'nested-package.js',
   deps = [
-    '//example/js_library:nested-package',
+    '//example/js/js_library:nested-package',
   ],
 )
 
