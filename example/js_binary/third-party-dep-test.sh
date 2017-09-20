@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
-expected="Hello World!"
-actual=$(example/bin/hello-js)
+expected="[ 'one', 'two', 'three' ]"
+actual=$(example/js_binary/third-party-dep)
 if [ "$expected" != "$actual" ] ; then
   echo "Expected '${expected}' got '${actual}'"
   exit 2

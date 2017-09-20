@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
-expected="4 doubled is 8"
-actual=$(example/bin/simple-dep)
+expected="4 tripled is 12"
+actual=$(example/js_binary/nested-package)
 if [ "$expected" != "$actual" ] ; then
   echo "Expected '${expected}' got '${actual}'"
   exit 2
