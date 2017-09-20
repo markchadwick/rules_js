@@ -1,11 +1,11 @@
 #!/bin/bash -eu
 
 echo '-----------------------------------------'
-find -L ..
+find -L .
 echo '-----------------------------------------'
 
-expected="Fart"
-actual=$(echo "Fart")
+expected="expected"
+actual=$(echo "actual")
 if [ "$expected" != "$actual" ] ; then
   echo "Expected '${expected}' got '${actual}'"
   exit 2

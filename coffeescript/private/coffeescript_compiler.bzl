@@ -11,19 +11,21 @@ def _coffeescript_compiler_impl(ctx):
     else:
       srcs_by_dir[dirname] += [src]
 
-  content = ['#!/bin/bash -eux']
+  content = [
+    '#!/bin/bash -eux',
+    'export RUNFILES="${0}.runfiles/%s"' % ctx.workspace_name,
+  ]
 
   for dirname, srcs in srcs_by_dir.items():
-    out_dir = ctx.configuration.bin_dir.path +'/'+ dirname
     content.append(' '.join([
-      ctx.executable._csc.short_path,
+      '${RUNFILES}/' + ctx.executable._csc.short_path,
+      # ctx.executable._csc.path,
       '--no-header',
       '--compile',
-      '--output', out_dir,
+      '--output', '"$1"',
     ] + [
-      src.short_path for src in srcs
+      src.path for src in srcs
     ]))
-    # csc should be ../com_vistarmedia_rules_js/coffeescript/toolchain/csc
 
   ctx.file_action(
     output  = ctx.outputs.executable,
@@ -31,7 +33,7 @@ def _coffeescript_compiler_impl(ctx):
   )
 
   runfiles = ctx.runfiles(
-    files=ctx.files.srcs + [ctx.outputs.executable],
+    files = ctx.files.srcs + ctx.files._csc + [ctx.outputs.executable],
   ).merge(ctx.attr._csc.default_runfiles)
 
   return struct(

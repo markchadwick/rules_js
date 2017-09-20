@@ -23,5 +23,5 @@ sh_test(
   name = 'compiler-test',
   size = 'small',
   srcs = ['compiler-test.sh'],
-  data = [':lib'],
+  data = [':lib']
 )

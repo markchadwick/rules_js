@@ -8,8 +8,7 @@ def _compiled_js_library_impl(ctx):
   for src in srcs:
     if src.extension == src_ext[1:]:
       out_name = src.basename.replace(src_ext, '.js')
-      output   = ctx.new_file(out_name)
-      outputs.append(output)
+      outputs.append(ctx.new_file(out_name))
 
     else:
       fail("%s doesn't have extension '%s'" % (src.path, src_ext))

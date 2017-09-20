@@ -15,6 +15,7 @@ def _coffeescript_sources_impl(ctx):
   ctx.action(
     mnemonic   = 'CompleCoffeescript',
     executable = ctx.executable.compiler,
+    arguments  = [str(ctx.configuration.bin_dir.path)],
     inputs     = srcs,
     outputs    = outputs,
   )
