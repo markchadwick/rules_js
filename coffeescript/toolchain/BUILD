@@ -1,9 +1,20 @@
 load('//js:def.bzl', 'js_binary')
+load('//js:def.bzl', 'js_compiler')
 
 js_binary(
-  name = 'csc',
+  name = 'csc-bin',
   src  = 'csc.js',
-  deps = ['@coffee.script//:lib'],
+  deps = [
+    '@coffee.script//:lib',
+    '@mkdirp//:lib',
+  ],
+)
+
+js_compiler(
+  name       = 'csc',
+  compiler   = ':csc-bin',
+  src_ext    = '.coffee',
+  mnemonic   = 'CompileCoffeeScript',
   visibility = ['//visibility:public'],
 )
 
