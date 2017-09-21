@@ -3,9 +3,6 @@ const fs      = require('fs')
 const path    = require('path')
 const util    = require('util')
 
-console.log('-------------------------')
-console.log(util)
-console.log('-------------------------')
 
 function promisify(fun) {
   return function() {
