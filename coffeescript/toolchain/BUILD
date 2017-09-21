@@ -12,22 +12,22 @@ js_binary(
   ],
 )
 
-js_binary(
-  name = 'csc-bin',
-  src  = 'csc.js',
-  deps = [
-    '@coffee.script//:lib',
-    '@mkdirp//:lib',
-  ],
-)
-
-# js_compiler(
-#   name       = 'csc',
-#   compiler   = ':csc-bin',
-#   src_ext    = '.coffee',
-#   mnemonic   = 'CompileCoffeeScript',
-#   visibility = ['//visibility:public'],
+# js_binary(
+#   name = 'csc-bin',
+#   src  = 'csc.js',
+#   deps = [
+#     '@coffee.script//:lib',
+#     '@mkdirp//:lib',
+#   ],
 # )
+
+js_compiler(
+  name       = 'coffeescript_js_compiler',
+  compiler   = ':coffeescript_compiler',
+  src_ext    = '.coffee',
+  mnemonic   = 'CompileCoffeeScript',
+  visibility = ['//visibility:public'],
+)
 # 
 # js_binary(
 #   name = 'cjsxc',
