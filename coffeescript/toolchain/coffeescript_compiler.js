@@ -29,8 +29,6 @@ module.exports.compile = compile
 
 
 async function compileFile(srcFilename, dstFilename, opts={}) {
-  console.log('~~~~~~~~~~~~~~~')
-  console.log('src', srcFilename, 'dst', dstFilename)
   const coffeeSrc = await readFile(srcFilename, 'utf8')
   const jsSrc = compile(srcFilename, coffeeSrc, opts)
   return writeFile(dstFilename, jsSrc)
