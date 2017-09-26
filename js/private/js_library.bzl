@@ -1,5 +1,4 @@
 
-
 def _symlink_path(ctx, f):
   path = ['node_modules']
   if ctx.attr.package:
@@ -19,10 +18,9 @@ def _symlink_path(ctx, f):
   return '/'.join(path)
 
 
-def _symlinks(ctx, files):
-  return {_symlink_path(ctx, f): f for f in files}
-
 def js_library_result(ctx, srcs):
+  symlinks = {_symlink_path(ctx, src): src for src in srcs}
+
   # Hi.
   #
   # I know it's weird that the runfiles `files` is blank here. Bummer, right?
@@ -33,14 +31,18 @@ def js_library_result(ctx, srcs):
   #
   # Love you always,
   #   -Mark
-  return struct(
-    files = depset(srcs),
-    runfiles = ctx.runfiles(
-      symlinks = _symlinks(ctx, srcs),
-      collect_default = True,
-      collect_data    = True,
-    ),
+  runfiles = ctx.runfiles(
+    symlinks        = symlinks,
+    collect_default = True,
+    collect_data    = True,
   )
+
+  return struct(
+    files        = depset(srcs),
+    runfiles     = runfiles,
+    _js_library_ = True,
+  )
+
 
 def _js_library_impl(ctx):
   return js_library_result(ctx, ctx.files.srcs)
@@ -50,7 +52,7 @@ js_library = rule(
   _js_library_impl,
   attrs = {
     'srcs':    attr.label_list(allow_files=True),
-    'deps':    attr.label_list(),
+    'deps':    attr.label_list(providers=['_js_library_']),
     'package': attr.string(),
   },
 )

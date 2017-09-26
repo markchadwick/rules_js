@@ -10,16 +10,8 @@ js_binary(
     '@coffee.script//:lib',
     '@mkdirp//:lib',
   ],
+  visibility = ['//visibility:public'],
 )
-
-# js_binary(
-#   name = 'csc-bin',
-#   src  = 'csc.js',
-#   deps = [
-#     '@coffee.script//:lib',
-#     '@mkdirp//:lib',
-#   ],
-# )
 
 js_compiler(
   name       = 'coffeescript_js_compiler',
@@ -28,17 +20,6 @@ js_compiler(
   mnemonic   = 'CompileCoffeeScript',
   visibility = ['//visibility:public'],
 )
-# 
-# js_binary(
-#   name = 'cjsxc',
-#   src  = 'cjsxc.js',
-#   deps = [
-#     '@coffee.react.transform//:lib',
-#     '@coffee.script//:lib',
-#     '@mkdirp//:lib',
-#   ],
-#   visibility = ['//visibility:public'],
-# )
 
 mocha_test(
   name = 'test',

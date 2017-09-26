@@ -9,33 +9,38 @@ const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
 
 
-function compile(filename, src, opts={}) {
+function badFileExtension(name) {
+  throw new Error(`File '${name}' has bad extension, '${path.extname(name)}'.`)
+}
+
+function compile(filename, src, opts) {
   const ext = path.extname(filename)
   const compileOpts = {filename: filename, ...opts}
 
-  switch(ext) {
-    case '.coffee':
-      return compileCoffee(src, compileOpts)
-
-    case '.cjsx':
+  switch(true) {
+    case ext === '.cjsx':
+    case opts.always_compile_cjsx:
       return compileCoffee(compileCjsx(src), compileOpts)
 
+    case ext === '.coffee':
+      return compileCoffee(src, compileOpts)
+
     default:
-      throw new Error(`Unknown file extension: ${ext}`)
+      badFileExtension(filename)
   }
 
 }
 module.exports.compile = compile
 
 
-async function compileFile(srcFilename, dstFilename, opts={}) {
+async function compileFile(srcFilename, dstFilename, opts) {
   const coffeeSrc = await readFile(srcFilename, 'utf8')
   const jsSrc = compile(srcFilename, coffeeSrc, opts)
   return writeFile(dstFilename, jsSrc)
 }
 module.exports.compileFile = compileFile
 
-function compileAll(outdir, srcs) {
+function compileAll(outdir, srcs, opts) {
   let work = []
 
   for(let i=0; i<srcs.length; i++) {
@@ -52,24 +57,40 @@ function compileAll(outdir, srcs) {
         break
 
       default:
-        throw new Error(`Unknown file extension: ${ext}`)
+        badFileExtension(src)
     }
 
     const dstFilename = path.join(outdir, dirname, outName)
-    work.push(compileFile(src, dstFilename))
+    work.push(compileFile(src, dstFilename, opts))
   }
 
   return Promise.all(work)
 }
 
-async function main(outdir, ...srcs) {
-  await compileAll(outdir, srcs)
+async function main(argv) {
+  let opts = {}
+  let outdir = null
+  let srcs = []
+
+  for(let i=0; i<argv.length; i++) {
+    const arg = argv[i]
+
+    if(arg.startsWith('--')) {
+      opts[arg.substring(2)] = true
+    } else if(outdir === null) {
+      outdir = arg
+    } else {
+      srcs.push(arg)
+    }
+  }
+
+  await compileAll(outdir, srcs, opts)
   return 0
 }
 module.exports.main = main
 
 if (require.main === module) {
-  main.apply(this, process.argv.slice(2))
+  main(process.argv.slice(2))
     .then(process.exit)
     .catch((err) => {
       console.error(err)

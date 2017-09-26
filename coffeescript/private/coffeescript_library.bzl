@@ -1,6 +1,8 @@
 load('//js:def.bzl', 'compiled_js_library')
 
-def coffeescript_library(**kwargs):
-  compiled_js_library(
-    compiler = '//coffeescript/toolchain:coffeescript_js_compiler',
-    **kwargs)
+
+DEFAULT_COMPILER = '//coffeescript/toolchain:coffeescript_js_compiler'
+
+
+def coffeescript_library(compiler=DEFAULT_COMPILER, **kwargs):
+  compiled_js_library(compiler=compiler, **kwargs)

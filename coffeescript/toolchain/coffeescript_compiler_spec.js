@@ -38,9 +38,9 @@ describe('Coffeescript Compiler', () => {
 
   it('should not compile unknown files', () => {
     const haveAtIt = () => {
-      cs.compile('test.js', 'function() { return false; }')
+      cs.compile('test.js', 'function() { return false; }', {})
     }
-    expect(haveAtIt).to.throw('Unknown file extension: .js')
+    expect(haveAtIt).to.throw("File 'test.js' has bad extension, '.js'.")
   })
 
 
@@ -65,8 +65,8 @@ describe('Coffeescript Compiler', () => {
     })
 
     it('should compile multiple files to a directory', async () => {
-      await mkdirp('./out')
-      await cs.main('./out', './doubler.coffee', './tripler.cjsx')
+      await mkdirp('out')
+      await cs.main(['out', 'doubler.coffee', 'tripler.cjsx'])
 
       const files = await readdir('./out')
       expect(files).to.contain('doubler.js')

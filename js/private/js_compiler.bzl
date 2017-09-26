@@ -12,11 +12,12 @@ def _js_compiler_impl(ctx):
     .merge(ctx.runfiles(files=ctx.files.compiler))
 
   return struct(
-    files    = depset(ctx.files.compiler),
-    runfiles = runfiles,
-    compiler = ctx.attr.compiler,
-    src_ext  = src_ext,
-    mnemonic = ctx.attr.mnemonic,
+    files     = depset(ctx.files.compiler),
+    runfiles  = runfiles,
+    compiler  = ctx.attr.compiler,
+    src_ext   = src_ext,
+    mnemonic  = ctx.attr.mnemonic,
+    arguments = ctx.attr.arguments,
   )
 
 
@@ -30,5 +31,7 @@ js_compiler = rule(
 
     'src_ext':  attr.string(mandatory=True),
     'mnemonic': attr.string(mandatory=True),
+
+    'arguments': attr.string_list(),
   },
 )

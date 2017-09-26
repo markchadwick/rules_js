@@ -18,7 +18,9 @@ def _compiled_js_library_impl(ctx):
     else:
       fail("%s doesn't have extension '%s'" % (src.path, src_ext))
 
-  arguments = [ctx.bin_dir.path] + [src.path for src in srcs]
+  arguments = ctx.attr.compiler.arguments + \
+    [ctx.bin_dir.path] + \
+    [src.path for src in srcs]
 
   inputs, _, input_manifests = ctx.resolve_command(tools=[compiler])
 
