@@ -40,6 +40,7 @@ function compileAll(outdir, srcs) {
 
   for(let i=0; i<srcs.length; i++) {
     const src = srcs[i]
+    console.log('src', src)
     const basename = path.basename(src)
     const dirname  = path.dirname(src)
     const ext      = path.extname(basename)
@@ -69,7 +70,10 @@ async function main(outdir, ...srcs) {
 module.exports.main = main
 
 if (require.main === module) {
-  main.apply(this, process.argv.slice(1))
+  main.apply(this, process.argv.slice(2))
     .then(process.exit)
-    .end()
+    .catch((err) => {
+      console.error(err)
+      process.exit(1)
+    })
 }

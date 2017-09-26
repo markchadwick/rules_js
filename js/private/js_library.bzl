@@ -26,10 +26,11 @@ def _js_library_impl(ctx):
   srcs = ctx.files.srcs
 
   return struct(
-    files    = set(srcs),
+    # files    = set(srcs),
     runfiles = ctx.runfiles(
-      files           = srcs,
-      root_symlinks   = _symlinks(ctx, srcs),
+      # files           = srcs,
+      # root_symlinks   = _symlinks(ctx, srcs),
+      symlinks = _symlinks(ctx, srcs),
       collect_default = True,
       collect_data    = True,
     ),

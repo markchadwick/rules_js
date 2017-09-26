@@ -7,13 +7,13 @@ def _js_compiler_impl(ctx):
   if src_ext[0] != '.':
     fail("src_ext '%s' doesn't start with .", src_ext)
 
-  # runfiles = ctx.attr.compiler.default_runfiles\
-  #   .merge(ctx.attr.compiler.data_runfiles)\
-  #   .merge(ctx.runfiles(files=ctx.files.compiler))
+  runfiles = ctx.attr.compiler.default_runfiles\
+    .merge(ctx.attr.compiler.data_runfiles)\
+    .merge(ctx.runfiles(files=ctx.files.compiler))
 
   return struct(
     files    = depset(ctx.files.compiler),
-    # runfiles = runfiles,
+    runfiles = runfiles,
     compiler = ctx.attr.compiler,
     src_ext  = src_ext,
     mnemonic = ctx.attr.mnemonic,

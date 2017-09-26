@@ -15,12 +15,15 @@ def _compiled_js_library_impl(ctx):
 
   arguments = [ctx.bin_dir.path] + [src.path for src in srcs]
 
+  inputs, _, input_manifests = ctx.resolve_command(tools=[compiler])
+
   ctx.action(
-    inputs     = ctx.files.compiler + srcs,
+    inputs     = inputs + srcs,
     outputs    = outputs,
     executable = compiler.files_to_run.executable,
     arguments  = arguments,
     mnemonic   = mnemonic,
+    input_manifests = input_manifests,
   )
 
   return struct(

@@ -1,11 +1,8 @@
-load('//js:def.bzl', 'node_binary')
+load('//js:def.bzl', 'js_binary')
 
-
-node_binary(
+js_binary(
   name = 'mocha',
+  src  = 'mocha.js',
   deps = ['@mocha//:lib'],
-  arguments = [
-    './external/mocha/mocha/bin/mocha',
-  ],
   visibility = ['//visibility:public'],
 )
