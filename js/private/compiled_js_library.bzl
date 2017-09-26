@@ -1,13 +1,18 @@
+load(':js_library.bzl', 'js_library_result')
+
+
 def _compiled_js_library_impl(ctx):
   srcs     = ctx.files.srcs
   compiler = ctx.attr.compiler.compiler
   mnemonic = ctx.attr.compiler.mnemonic
   src_ext  = ctx.attr.compiler.src_ext
-  outputs = []
+  package  = ctx.label.package + '/'
+  outputs  = []
 
   for src in srcs:
     if src.extension == src_ext[1:]:
-      out_name = src.basename.replace(src_ext, '.js')
+      out_name = src.short_path.replace(package, '', 1)\
+        .replace(src.extension, 'js', 1)
       outputs.append(ctx.new_file(out_name))
 
     else:
@@ -26,10 +31,8 @@ def _compiled_js_library_impl(ctx):
     input_manifests = input_manifests,
   )
 
-  return struct(
-    files    = depset(outputs),
-    runfiles = ctx.runfiles(files=outputs),
-  )
+  return js_library_result(ctx, outputs)
+
 
 compiled_js_library = rule(
   _compiled_js_library_impl,

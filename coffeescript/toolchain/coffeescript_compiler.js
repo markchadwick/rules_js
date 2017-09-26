@@ -29,6 +29,8 @@ module.exports.compile = compile
 
 
 async function compileFile(srcFilename, dstFilename, opts={}) {
+  console.log('~~~~~~~~~~~~~~~')
+  console.log('src', srcFilename, 'dst', dstFilename)
   const coffeeSrc = await readFile(srcFilename, 'utf8')
   const jsSrc = compile(srcFilename, coffeeSrc, opts)
   return writeFile(dstFilename, jsSrc)
@@ -40,7 +42,6 @@ function compileAll(outdir, srcs) {
 
   for(let i=0; i<srcs.length; i++) {
     const src = srcs[i]
-    console.log('src', src)
     const basename = path.basename(src)
     const dirname  = path.dirname(src)
     const ext      = path.extname(basename)

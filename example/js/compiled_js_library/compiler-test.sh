@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 
-COMPILED_JS='./example/js/compiled_js_library/test_src.js'
+COMPILED_JS='./node_modules/example/js/compiled_js_library/test_src.js'
 
 expected="// Created by noop compiler"
 actual=$(sed -n 1p $COMPILED_JS)
