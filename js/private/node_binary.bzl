@@ -29,23 +29,11 @@ def _node_binary_impl(ctx):
     'if [ -z ${NODE_PATH+x} ]; then',
     '  node_path="${RUNFILES}/node_modules"',
     'else',
-    '  echo ----------------------------------------------------------',
-    '  echo ----------------------------------------------------------',
-    '  echo ----------------------------------------------------------',
-    '  echo node path was set alrady...',
-    '  echo ----------------------------------------------------------',
-    '  echo ----------------------------------------------------------',
-    # '  ls $NODE_PATH',
-    '  echo ----------------------------------------------------------',
     '  node_path="${RUNFILES}/node_modules:$NODE_PATH"',
     'fi',
 
     'export NODE_PATH="${node_path}"',
     'NODE="${RUNFILES}/%s"' % ctx.executable._node.path,
-
-    # 'echo ---------------------------------------------------------',
-    # 'find -L . -name node_modules',
-    # 'echo ---------------------------------------------------------',
 
     'exec $NODE {arguments} "$@"'.format(arguments=' '.join(arguments)),
   ]
