@@ -40,6 +40,7 @@ compiled_js_library = rule(
   _compiled_js_library_impl,
   attrs = {
     'srcs':     attr.label_list(allow_files=True),
+    'deps':     attr.label_list(providers=['_js_library_']),
     'package':  attr.string(),
     'compiler': attr.label(
       mandatory  = True,

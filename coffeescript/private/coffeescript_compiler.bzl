@@ -10,7 +10,7 @@ def coffeescript_compiler(name,
 
   js_compiler(
     name       = name,
-    compiler   = '//coffeescript/toolchain:coffeescript_compiler',
+    compiler   = '@com_vistarmedia_rules_js//coffeescript/toolchain:coffeescript_compiler',
     src_ext    = '.coffee',
     mnemonic   = 'CompileCoffeeScript',
     arguments  = arguments,

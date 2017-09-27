@@ -1,1 +1,1 @@
-module.exports.double = (n) -> n * 2
+module.exports.simple_cs = (n) -> n * 2

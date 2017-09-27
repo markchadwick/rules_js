@@ -1,21 +1,28 @@
 
 def _symlink_path(ctx, f):
-  path = ['node_modules']
-  if ctx.attr.package:
-    root = ctx.label.package
-    workspace_root = ctx.label.workspace_root
-    if workspace_root:
-      root = ctx.label.workspace_root + '/' + root
+  package = ctx.label.package
+  workspace_root = ctx.label.workspace_root
 
-    path += [
-      ctx.attr.package,
-      f.path.replace(root, '', 1),
-    ]
-
+  # Package names should ignore workspaces. If this symlink is from an external
+  # workspace, rewrite it so that it appears local.
+  if workspace_root:
+    workspace_root += '/'
+    path = f.path.replace(workspace_root, '', 1)
   else:
-    path += [f.short_path]
+    path = f.short_path
 
-  return '/'.join(path)
+  # Determine the node import. If a `package` is given, use that. Otherwise, use
+  # the current target's path regardless of workspace.
+  import_path = ctx.attr.package
+  if not import_path:
+    import_path = package
+
+  # If the present package does not mesh with the import path, rewrite the
+  # symlink path.
+  if package != import_path:
+    path = path.replace(package, import_path, 1)
+
+  return 'node_modules/' + path
 
 
 def js_library_result(ctx, srcs):

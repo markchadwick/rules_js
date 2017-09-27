@@ -1,5 +1,14 @@
 
+def external_name(name):
+  return name\
+    .replace('-', '.')\
+    .replace('/', '_')\
+    .replace('@', '_')
+
+
 def _install_tarballs(ctx, tarballs):
+  ctx.file('WORKSPACE', 'workspace(name="%s")\n' % ctx.name, False)
+
   root      = str(ctx.path('.'))
   installer = str(ctx.path(ctx.attr._npm_to_js_library))
 
@@ -47,10 +56,8 @@ def _npm_registry_url(package, version, namespace=None):
 
   return '/'.join(url_fragments)
 
-
 def _npm_install_impl(ctx):
   package, version, sha256 = ctx.attr.package, ctx.attr.version, ctx.attr.sha256
-  ctx.file('WORKSPACE', 'workspace(name="%s")\n' % ctx.name, False)
 
   tarballs = []
   url       = _npm_registry_url(package, version)
@@ -77,6 +84,15 @@ def _npm_install_impl(ctx):
   _install_tarballs(ctx, tarballs)
 
 
+def _npm_tarball_install_impl(ctx):
+  path = _download_tarball(ctx,
+    name   = 'lib.tgz',
+    url    = ctx.attr.url,
+    sha256 = ctx.attr.sha256,
+  )
+  _install_tarballs(ctx, [path])
+
+
 _npm_install = repository_rule(
   implementation = _npm_install_impl,
   attrs = {
@@ -98,10 +114,27 @@ _npm_install = repository_rule(
   }
 )
 
-def npm_install(name, **kwargs):
-  external = name\
-    .replace('-', '.')\
-    .replace('/', '_')\
-    .replace('@', '_')
+_npm_tarball_install = repository_rule(
+  implementation = _npm_tarball_install_impl,
+  attrs = {
+    'url':     attr.string(mandatory=True),
+    'sha256':  attr.string(),
 
+    'ignore_deps': attr.string_list(),
+
+    '_npm_to_js_library': attr.label(
+      default     = Label('//js/tools:npm_to_js_library.py'),
+      single_file = True,
+      executable  = True,
+      cfg         = 'host',
+    )
+  }
+)
+
+def npm_install(name, **kwargs):
+  external = external_name(name)
   _npm_install(name=external, package=name, **kwargs)
+
+def npm_tarball_install(name, **kwargs):
+  external = external_name(name)
+  _npm_tarball_install(name=external, **kwargs)

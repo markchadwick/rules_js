@@ -6,7 +6,6 @@ def js_binary(name, src, **kwargs):
   node_args  = kwargs.pop('arguments', [])
   visibility = kwargs.pop('visibility', None)
   lib_name   = name + '.lib'
-  src_name   = name + '.src'
 
   js_library(
     name       = lib_name,
@@ -14,27 +13,10 @@ def js_binary(name, src, **kwargs):
     visibility = visibility,
     **kwargs)
 
-  src_name = src
-  # native.filegroup(
-  #   name       = src_name,
-  #   srcs       = [src],
-  #   visibility = visibility,
-  # )
-
-  # TODO: `PACKAGE_NAME` will be deprecated for `native.package_name()` in a
-  # near version of bazel
-  # entrypoint = '/'.join([
-  #   '$(location :%s)', 
-  #   PACKAGE_NAME,
-  #   src,
-  # ])
-  # entrypoint = '$(location :%s)' % src_name
-  # arguments = [entrypoint] + node_args
-
   node_binary(
     name       = name,
-    entrypoint = src_name,
+    entrypoint = src,
     arguments  = node_args,
-    deps       = [lib_name, src_name],
+    deps       = [lib_name],
     visibility = visibility,
   )

@@ -1,5 +1,9 @@
 #!/bin/bash -eu
 
+echo ---------------------------------------------------
+find -L . -type f
+echo ---------------------------------------------------
+
 FILENAME='./node_modules/example/coffeescript/coffeescript_library/simple_cs.js'
 
 if ! [ -s $FILENAME ]; then
@@ -9,7 +13,7 @@ fi
 
 expected=$(cat << _EOF_
 (function() {
-  module.exports.double = function(n) {
+  module.exports.simple_cs = function(n) {
     return n * 2;
   };
 

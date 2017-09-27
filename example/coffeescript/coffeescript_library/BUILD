@@ -3,6 +3,7 @@ load('//coffeescript:def.bzl', 'coffeescript_library')
 coffeescript_library(
   name = 'lib',
   srcs = ['simple_cs.coffee'],
+  visibility = ['//example/coffeescript:__subpackages__'],
 )
 
 sh_test(

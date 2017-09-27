@@ -4,7 +4,7 @@ def _node_binary_impl(ctx):
   runfiles_files = ctx.files._node + [ctx.outputs.executable]
 
   if ctx.file.entrypoint:
-    arguments.append('${RUNFILES}/' + ctx.file.entrypoint.path)
+    arguments.append('${RUNFILES}/' + ctx.file.entrypoint.short_path)
     runfiles_files.append(ctx.file.entrypoint)
 
   for argument in ctx.attr.arguments:
@@ -13,13 +13,6 @@ def _node_binary_impl(ctx):
 
   content   = [
     '#!/bin/bash -eu',
-
-    # Get full path of the script and set it to `$self`. If it isn't absolute,
-    # prefix `$PWD` to ensure it is.
-    # 'case "$0" in',
-    # '/*) export self="$0" ;;',
-    # '*)  export self="${PWD}/${0}" ;;',
-    # 'esac',
 
     # When executing as a binary target, Bazel will place our runfiles in the
     # same name as this script with a '.runfiles' appended. When running as a
