@@ -108,7 +108,7 @@ class Package(object):
       if name in ignore_deps:
         continue
 
-      target = '@%s//:lib' % name
+      target = '@%s//%s' % (name, name)
       deps.append(target)
 
     return _js_library_buildfile(
