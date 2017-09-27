@@ -23,10 +23,29 @@ def _node_binary_impl(ctx):
     '   runfiles_root="$TEST_SRCDIR"',
     'fi',
 
+
     'export RUNFILES="${runfiles_root}/%s"' % ctx.workspace_name,
 
-    'export NODE_PATH="${RUNFILES}/node_modules"',
+    'if [ -z ${NODE_PATH+x} ]; then',
+    '  node_path="${RUNFILES}/node_modules"',
+    'else',
+    '  echo ----------------------------------------------------------',
+    '  echo ----------------------------------------------------------',
+    '  echo ----------------------------------------------------------',
+    '  echo node path was set alrady...',
+    '  echo ----------------------------------------------------------',
+    '  echo ----------------------------------------------------------',
+    # '  ls $NODE_PATH',
+    '  echo ----------------------------------------------------------',
+    '  node_path="${RUNFILES}/node_modules:$NODE_PATH"',
+    'fi',
+
+    'export NODE_PATH="${node_path}"',
     'NODE="${RUNFILES}/%s"' % ctx.executable._node.path,
+
+    # 'echo ---------------------------------------------------------',
+    # 'find -L . -name node_modules',
+    # 'echo ---------------------------------------------------------',
 
     'exec $NODE {arguments} "$@"'.format(arguments=' '.join(arguments)),
   ]
@@ -44,6 +63,7 @@ def _node_binary_impl(ctx):
   return struct(
     files = set([ctx.outputs.executable]),
     runfiles = runfiles,
+    entrypoint = ctx.file.entrypoint,
   )
 
 node_binary = rule(

@@ -9,6 +9,12 @@ coffeescript_repositories()
 load('//mocha:def.bzl', 'mocha_repositories')
 mocha_repositories()
 
+load('//browserify:def.bzl', 'browserify_repositories')
+browserify_repositories()
+
+load('//uglify:def.bzl', 'uglify_repositories')
+uglify_repositories()
+
 
 load('//js:def.bzl', 'npm_install')
 npm_install('lodash', version='4.17.4', type_version='4.14.71')
