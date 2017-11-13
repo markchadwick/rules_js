@@ -40,7 +40,7 @@ def _browserify_impl(ctx):
   )
 
   return struct(
-    files = set([ctx.outputs.js]),
+    files = depset([ctx.outputs.js]),
     runfiles = ctx.runfiles(files=[ctx.outputs.js]),
   )
 

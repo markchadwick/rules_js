@@ -35,7 +35,7 @@ def _node_binary_impl(ctx):
     'export NODE_PATH="${node_path}"',
     'NODE="${RUNFILES}/%s"' % ctx.executable._node.path,
 
-    'exec $NODE {arguments} "$@"'.format(arguments=' '.join(arguments)),
+    'exec $NODE --prof {arguments} "$@"'.format(arguments=' '.join(arguments)),
   ]
 
   ctx.file_action(
@@ -49,7 +49,7 @@ def _node_binary_impl(ctx):
     runfiles = runfiles.merge(dep.default_runfiles)
 
   return struct(
-    files = set([ctx.outputs.executable]),
+    files = depset([ctx.outputs.executable]),
     runfiles = runfiles,
     entrypoint = ctx.file.entrypoint,
   )

@@ -22,7 +22,7 @@ def _mocha_test_impl(ctx):
   ).merge(ctx.attr._mocha.default_runfiles)
 
   return struct(
-    files = set([ctx.outputs.executable]),
+    files = depset([ctx.outputs.executable]),
     runfiles = runfiles,
   )
 
