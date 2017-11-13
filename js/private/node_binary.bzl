@@ -65,6 +65,6 @@ node_binary = rule(
     '_node': attr.label(
       default    = Label('//js/toolchain:node'),
       executable = True,
-      cfg = 'host'),
+      cfg = 'target'),
   },
 )

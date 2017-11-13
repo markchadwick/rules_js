@@ -53,7 +53,7 @@ browserify = rule(
 
     '_browserify': attr.label(
       default = Label('//browserify/toolchain:browserify'),
-      cfg = 'host',
+      cfg = 'target',
       executable = True),
 
   },

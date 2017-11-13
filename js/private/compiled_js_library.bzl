@@ -2,21 +2,19 @@ load(':js_library.bzl', 'js_library_result')
 
 
 def _compiled_js_library_impl(ctx):
-  srcs     = ctx.files.srcs
-  compiler = ctx.attr.compiler.compiler
-  mnemonic = ctx.attr.compiler.mnemonic
-  src_ext  = ctx.attr.compiler.src_ext
-  package  = ctx.label.package + '/'
-  outputs  = []
+  srcs      = ctx.files.srcs
+  compiler  = ctx.attr.compiler.compiler
+  mnemonic  = ctx.attr.compiler.mnemonic
+  transform = ctx.attr.compiler.transform
+  package   = ctx.label.package + '/'
+  outputs   = []
 
   for src in srcs:
-    if src.extension == src_ext[1:]:
+    ext = '.' + src.extension
+    for output_ext in transform[ext]:
       out_name = src.short_path.replace(package, '', 1)\
-        .replace(src.extension, 'js', 1)
+                               .replace(ext, output_ext, 1)
       outputs.append(ctx.new_file(out_name))
-
-    else:
-      fail("%s doesn't have extension '%s'" % (src.path, src_ext))
 
   arguments = ctx.attr.compiler.arguments + \
     [ctx.bin_dir.path] + \
@@ -45,7 +43,7 @@ compiled_js_library = rule(
     'compiler': attr.label(
       mandatory  = True,
       cfg        = 'host',
-      providers  = ['src_ext', 'mnemonic', 'compiler'],
+      providers  = ['transform', 'mnemonic', 'compiler'],
     ),
   },
 )

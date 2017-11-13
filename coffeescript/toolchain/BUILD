@@ -16,9 +16,12 @@ js_binary(
 js_compiler(
   name       = 'coffeescript_js_compiler',
   compiler   = ':coffeescript_compiler',
-  src_ext    = '.coffee',
   mnemonic   = 'CompileCoffeeScript',
   visibility = ['//visibility:public'],
+  transform  = {
+    '.coffee':  ['.js'],
+    '.cjsx':    ['.js'],
+  },
 )
 
 mocha_test(

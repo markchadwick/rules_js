@@ -11,8 +11,11 @@ def coffeescript_compiler(name,
   js_compiler(
     name       = name,
     compiler   = '@com_vistarmedia_rules_js//coffeescript/toolchain:coffeescript_compiler',
-    src_ext    = '.coffee',
     mnemonic   = 'CompileCoffeeScript',
     arguments  = arguments,
     visibility = visibility,
+    transform  = {
+      '.coffee':  ['.js'],
+      '.cjsx':    ['.js'],
+    },
   )

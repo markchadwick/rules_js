@@ -35,7 +35,7 @@ mocha_test = rule(
     'deps': attr.label_list(),
     '_mocha': attr.label(
       default    = Label('//mocha/toolchain:mocha'),
-      cfg        = 'host',
+      cfg        = 'target',
       executable = True,
     ),
   }

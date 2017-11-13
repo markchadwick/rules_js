@@ -32,7 +32,7 @@ uglify = rule(
 
     '_uglify': attr.label(
       default = Label('//uglify/toolchain:uglify'),
-      cfg = 'host',
+      cfg = 'target',
       executable = True),
 
   },

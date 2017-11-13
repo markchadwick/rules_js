@@ -10,7 +10,7 @@ js_compiler(
   name      = 'noop',
   compiler  = ':noop_compiler',
   mnemonic  = 'NoopCompile',
-  src_ext   = '.xxx',
+  transform = {'.xxx': ['.js']},
 )
 
 compiled_js_library(

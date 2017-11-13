@@ -6,6 +6,9 @@ js_repositories()
 load('//coffeescript:def.bzl', 'coffeescript_repositories')
 coffeescript_repositories()
 
+load('//typescript:def.bzl', 'typescript_repositories')
+typescript_repositories()
+
 load('//mocha:def.bzl', 'mocha_repositories')
 mocha_repositories()
 
