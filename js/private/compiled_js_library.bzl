@@ -14,15 +14,17 @@ def _compiled_js_library_impl(ctx):
     for output_ext in transform[ext]:
       out_name = src.short_path.replace(package, '', 1)\
                                .replace(ext, output_ext, 1)
-      outputs.append(ctx.new_file(out_name))
+      out_file = ctx.actions.declare_file(out_name, sibling=src)
+      outputs.append(out_file)
 
   arguments = ctx.attr.compiler.arguments + \
     [ctx.bin_dir.path] + \
     [src.path for src in srcs]
 
-  inputs, _, input_manifests = ctx.resolve_command(tools=[compiler])
+  tools = ctx.attr.deps + [compiler]
+  inputs, _, input_manifests = ctx.resolve_command(tools=tools)
 
-  ctx.action(
+  ctx.actions.run(
     inputs     = inputs + srcs,
     outputs    = outputs,
     executable = compiler.files_to_run.executable,

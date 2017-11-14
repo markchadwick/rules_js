@@ -52,6 +52,30 @@ function compile(config, out, srcs) {
   }
 }
 
+
+const fs = require('fs')
+const path = require('path')
+function _walk(dir, done) {
+  // console.log('WALK IT')
+  fs.readdir(dir, function(err, files) {
+    if (err) throw err;
+    files.forEach(function(file) {
+      var filePath = path.join(dir, file)
+      fs.stat(filePath, function(err, stats) {
+        if (err) throw err;
+        if(stats.isDirectory()) {
+          console.log('d', filePath)
+          _walk(filePath)
+        } else {
+          if(filePath.endsWith('.js') || filePath.endsWith('.d.ts')) {
+            console.log('f', filePath)
+          }
+        }
+      })
+    })
+  })
+}
+
 /**
  * Typescript Compiler entrypoint. Due to the way the js_compiler system is
  * setup, there are two ways to use this binary. In all examples, argument
@@ -78,7 +102,9 @@ function main(args) {
   const out  = args[0]
   const srcs = args.slice(1)
 
-  return compile(config, out, srcs)
+  console.log('-------------------------------------------------')
+  _walk('.')
+  setTimeout(function() { compile(config, out, srcs) }, 1000)
 }
 
 main(process.argv.slice(2))
