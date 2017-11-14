@@ -1,5 +1,6 @@
 load('//js:def.bzl', 'js_compiler')
 
+
 def coffeescript_compiler(name,
     always_compile_cjsx = False,
     visibility = None):
