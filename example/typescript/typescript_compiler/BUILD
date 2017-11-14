@@ -30,3 +30,10 @@ typescript_library(
   srcs = ['jsx.tsx'],
   compiler = ':jsx-compiler',
 )
+
+sh_test(
+  name = 'jsx_test',
+  size = 'small',
+  srcs = ['jsx_test.sh'],
+  data = [':jsx'],
+)

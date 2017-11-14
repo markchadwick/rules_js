@@ -1,6 +1,5 @@
 load('//js:def.bzl', 'js_compiler')
 
-DEFAULT_COMPILER = '@com_vistarmedia_rules_js//typescript/toolchain:typescript_compiler'
 
 def typescript_compiler(name,
   arguments = [],
@@ -27,7 +26,7 @@ def typescript_compiler(name,
 
   js_compiler(
     name       = name,
-    compiler   = DEFAULT_COMPILER,
+    compiler   = '@com_vistarmedia_rules_js//typescript/toolchain:typescript_compiler',
     mnemonic   = 'CompileTypeScript',
     arguments  = ['--config', config.to_json()],
     visibility = visibility,

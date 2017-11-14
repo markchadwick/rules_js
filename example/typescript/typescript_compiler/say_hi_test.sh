@@ -1,6 +1,5 @@
 #!/bin/bash -eu
 
-
 expected=$(cat << _EOF_
 "use strict";
 exports.__esModule = true;
